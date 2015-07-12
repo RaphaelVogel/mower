@@ -1,0 +1,5 @@
+# install modules with: pip install -r requirements.txt
+bottle
+cherrypy
+requests
+tinkerforge
