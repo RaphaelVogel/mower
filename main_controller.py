@@ -1,18 +1,13 @@
 import multiprocessing as mp
-import queue
-import modules.rpm_controller as rpm
+import modules.drive_controller as drive
 import time
 
 
-rpm_queue = mp.Queue(1)
-p_rpm = mp.Process(target=rpm.get_rpm, args=(rpm_queue,))
-p_rpm.daemon = True
-p_rpm.start()
+drive_conn, drive_conn1 = mp.Pipe()
+p_drive = mp.Process(target=drive.start, args=(drive_conn1,))
+p_drive.start()
 
-# main loop
 while True:
-    try:
-        print(rpm_queue.get_nowait())
-    except queue.Empty:
-        print("Queue was empty")
-    time.sleep(0.5)
+    time.sleep(0.1)
+    if drive_conn.poll():
+        print(drive_conn.recv())
