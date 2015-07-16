@@ -8,6 +8,9 @@ p_drive = mp.Process(target=drive.start, args=(drive_conn1,))
 p_drive.start()
 
 while True:
-    time.sleep(0.1)
-    if drive_conn.poll():
-        print(drive_conn.recv())
+    right = input("Enter right wheel speed:")
+    left = input("Enter left wheel speed:")
+    cutter = input("Enter cutter speed:")
+    drive_conn.send("drive/" + right + ',' + left)
+    drive_conn.send("cutter/" + cutter)
+    time.sleep(0.5)
