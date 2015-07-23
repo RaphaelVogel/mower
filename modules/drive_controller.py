@@ -15,17 +15,22 @@ def start(main_conn):
 
     io16 = IO16('b7Y', ipcon)
     io16.set_port_configuration('a', 0b11111111, IO16.DIRECTION_IN, True)     # all pins input with pull-up
-    io16.set_edge_count_config(0b00000000, IO16.EDGE_TYPE_RISING, 1)          # set pin 0 for edge count
-    io16.set_edge_count_config(0b00000001, IO16.EDGE_TYPE_RISING, 1)          # set pin 1 for edge count
+    io16.set_edge_count_config(0, IO16.EDGE_TYPE_BOTH, 1)          # set pin 0 for edge count
+    io16.set_edge_count_config(1, IO16.EDGE_TYPE_BOTH, 1)          # set pin 1 for edge count
     count = 0
+    command = None
     while True:
         count += 1
         if count > 100000:
             count = 0
         # check drive command comming from main process.
         # Commands: drive/<right_wheel>,<left_wheel>   cutter/<speed>  terminate
-        if main_conn.poll():
-            cmd = main_conn.recv().split('/')
+        if main_conn.poll() or command is not None:
+            if command is not None:
+                cmd = command.split('/')
+                command = None
+            else:
+                cmd = main_conn.recv().split('/')
             if cmd[0] == 'drive':
                 speeds = cmd[1].split(',')
                 right_wheel = int(speeds[0])
@@ -38,10 +43,11 @@ def start(main_conn):
                 break
 
         # check rpm per wheel and adjust individual wheel speed based on DRIVE_STATE
-        if (count % 10) == 0:
-            right_rpm = io16.get_edge_count(0b00000000, True)
-            left_rpm = io16.get_edge_count(0b00000001, True)
-            print("Left RPM: ", left_rpm, "  -  Right RPM:", right_rpm)
+        if (count % 3) == 0:
+            right_rpm = io16.get_edge_count(0, True)
+            left_rpm = io16.get_edge_count(1, True)
+            if abs(left_rpm - right_rpm) > 12:
+                command = "drive/0,0"
 
         time.sleep(0.04)
 
