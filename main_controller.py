@@ -12,5 +12,5 @@ while True:
     #left = input("Enter left wheel speed:")
     #cutter = input("Enter cutter speed:")
     #drive_conn.send("cutter/" + cutter)
-    val = input("New Value: ")
-    drive_conn.send(val)
+    callback_count = input("New Value: ")
+    drive_conn.send(callback_count)
