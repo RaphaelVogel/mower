@@ -22,7 +22,7 @@ def start(main_conn):
     global loop_counter, internal_cmd, rpm_values_right, rpm_values_left
     ipcon.connect('localhost', 4223)
     time.sleep(2)
-    servo = Servo('6QFwhz', ipcon)
+    servo = Servo('6JqqH8', ipcon)
     servo.set_acceleration(0, 50000)  # right wheel
     servo.set_acceleration(1, 50000)  # left wheel
     servo.set_acceleration(2, 30000)  # cutter
