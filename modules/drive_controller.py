@@ -24,8 +24,11 @@ def start(main_conn):
     time.sleep(2)
     servo = Servo('6JqqH8', ipcon)
     servo.set_acceleration(0, 50000)  # right wheel
+    servo.set_velocity(0, 50000)
     servo.set_acceleration(1, 50000)  # left wheel
+    servo.set_velocity(1, 50000)
     servo.set_acceleration(2, 30000)  # cutter
+    servo.set_velocity(2, 30000)
     io16 = IO16('b7Y', ipcon)
     io16.set_port_configuration('a', 0b11111111, IO16.DIRECTION_IN, True)  # all pins input with pull-up
     io16.set_edge_count_config(0, IO16.EDGE_TYPE_BOTH, 1)  # set pin 0 for edge count
@@ -57,12 +60,12 @@ def start(main_conn):
 
             if len(rpm_values_right) > 3:
                 moving_average = sum(rpm_values_right) / len(rpm_values_right)
-                if right_rpm < (moving_average * 0.40):
+                if right_rpm < (moving_average * 0.50):
                     internal_cmd = 'stop/'
 
             if len(rpm_values_left) > 3:
                 moving_average = sum(rpm_values_left) / len(rpm_values_left)
-                if left_rpm < (moving_average * 0.40):
+                if left_rpm < (moving_average * 0.50):
                     internal_cmd = 'stop/'
 
         # update drive monoflop every second
