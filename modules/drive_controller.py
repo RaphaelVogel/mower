@@ -1,11 +1,14 @@
 import time
+import signal
 import sys
 from collections import deque
 from tinkerforge.ip_connection import IPConnection
-from tinkerforge.brick_servo import Servo
-from tinkerforge.bricklet_io16 import IO16
+from tinkerforge.brick_servo import BrickServo
+from tinkerforge.bricklet_io16 import BrickletIO16
 from tinkerforge.bricklet_industrial_quad_relay import BrickletIndustrialQuadRelay
+import logging
 
+logger = logging.getLogger("mower_logger")
 ipcon = IPConnection()
 
 cur_mode = 'stop'
@@ -14,25 +17,34 @@ cur_speed = 0
 rpm_values_right = deque(maxlen=10)  # queue for calculating moving average
 rpm_values_left = deque(maxlen=10)  # queue for calculating moving average
 
-loop_counter = 0
-internal_cmd = None
+
+def signal_handler(signal_type, frame):
+    if ipcon.get_connection_state() == IPConnection.CONNECTION_STATE_CONNECTED:
+        ipcon.disconnect()
+    logger.info("Terminate drive_controller")
+    sys.exit(0)
 
 
-def start(main_conn):
-    global loop_counter, internal_cmd, rpm_values_right, rpm_values_left
+def start(parent_conn):
+    loop_counter = 0
+    internal_cmd = None
+    signal.signal(signal.SIGTERM, signal_handler)
+    logger.info("Starting drive_controller")
+    global rpm_values_right, rpm_values_left
+
     ipcon.connect('localhost', 4223)
-    time.sleep(2)
-    servo = Servo('6JqqH8', ipcon)
+    time.sleep(0.5)
+    servo = BrickServo('6JqqH8', ipcon)
     servo.set_acceleration(0, 50000)  # right wheel
     servo.set_velocity(0, 50000)
     servo.set_acceleration(1, 50000)  # left wheel
     servo.set_velocity(1, 50000)
     servo.set_acceleration(2, 30000)  # cutter
     servo.set_velocity(2, 30000)
-    io16 = IO16('b7Y', ipcon)
-    io16.set_port_configuration('a', 0b11111111, IO16.DIRECTION_IN, True)  # all pins input with pull-up
-    io16.set_edge_count_config(0, IO16.EDGE_TYPE_BOTH, 1)  # set pin 0 for edge count
-    io16.set_edge_count_config(1, IO16.EDGE_TYPE_BOTH, 1)  # set pin 1 for edge count
+    io16 = BrickletIO16('b7Y', ipcon)
+    io16.set_port_configuration('a', 0b11111111, BrickletIO16.DIRECTION_IN, True)  # all pins input with pull-up
+    io16.set_edge_count_config(0, BrickletIO16.EDGE_TYPE_BOTH, 1)  # set pin 0 for edge count
+    io16.set_edge_count_config(1, BrickletIO16.EDGE_TYPE_BOTH, 1)  # set pin 1 for edge count
     iqr = BrickletIndustrialQuadRelay('mT2', ipcon)
     iqr.set_monoflop(0b0111, 0b0111, 1500)
 
@@ -42,13 +54,15 @@ def start(main_conn):
             loop_counter = 0
 
         # Commands: forward/<speed>, backward/<speed>, turnL/, turnR/,
-        # curveL/<smooth|medium|strong>, curveR/<smooth|medium|strong>, cutter/<speed>, stop/, terminate/
-        if main_conn.poll():
-            cmd = main_conn.recv()
+        # curveL/<smooth|medium|strong>, curveR/<smooth|medium|strong>, cutter/<speed>, stop/
+        if parent_conn.poll():
+            cmd = parent_conn.recv()
+            logger.info("Execute external command %s" % cmd)
             execute_command(cmd, servo)
         elif internal_cmd is not None:
             cmd = internal_cmd
             internal_cmd = None
+            logger.info("Execute internal command %s" % cmd)
             execute_command(cmd, servo)
 
         # check rpm per wheel against moving average to check if wheel is blocked every 100ms
@@ -116,9 +130,6 @@ def execute_command(cmd, servo):
     elif cur_mode == 'stop':
         reset_queues('both')
         execute_drive_command(servo, 0, 0)
-    elif cur_mode == 'terminate':
-        ipcon.disconnect()
-        sys.exit(0)
 
 
 # execute a drive command
