@@ -35,7 +35,6 @@ if __name__ == "__main__":
     ipcon.connect('localhost', 4223)
     time.sleep(0.5)
     master = BrickMaster('5Wr87j', ipcon)
-    print("Voltage:", master.get_stack_voltage())
 
     while True:
         if shutdown_conn.poll():
