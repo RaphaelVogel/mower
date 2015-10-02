@@ -12,7 +12,7 @@ import subprocess
 
 logger = logging.getLogger("mower_logger")
 logger.setLevel(logging.INFO)
-filehandler = RotatingFileHandler('./mower/log.txt', maxBytes=100000, backupCount=2)
+filehandler = RotatingFileHandler('./log.txt', maxBytes=100000, backupCount=2)
 formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(message)s', datefmt='%d-%m-%Y %H:%M:%S')
 filehandler.setFormatter(formatter)
 logger.addHandler(filehandler)
