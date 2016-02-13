@@ -12,7 +12,7 @@ import subprocess
 
 logger = logging.getLogger("mower_logger")
 logger.setLevel(logging.INFO)
-filehandler = RotatingFileHandler('./log.txt', maxBytes=100000, backupCount=2)
+filehandler = RotatingFileHandler('./log.txt', maxBytes=10000, backupCount=3)
 formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(message)s', datefmt='%d-%m-%Y %H:%M:%S')
 filehandler.setFormatter(formatter)
 logger.addHandler(filehandler)
@@ -52,17 +52,16 @@ if __name__ == "__main__":
         if drive_conn.poll():
             cmd = drive_conn.recv()
             if cmd == "bumper_active":
-                time.sleep(0.5)
+                time.sleep(0.8)
                 drive_conn.send("backward/3500")
-                time.sleep(3)
+                time.sleep(2.5)
                 drive_conn.send("stop/")
-                time.sleep(0.5)
-                drive_conn.send("turnL/")
-                time.sleep(0.1)
+                time.sleep(0.8)
+                #drive_conn.send("turnL/")
                 drive_conn.send("reset_bumper/")
-                time.sleep(3)
-                drive_conn.send("stop/")
-                time.sleep(0.5)
+                time.sleep(2.5)
+                #drive_conn.send("stop/")
+                #time.sleep(0.8)
                 drive_conn.send("forward/3500")
 
         time.sleep(0.01)

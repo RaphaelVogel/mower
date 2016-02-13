@@ -33,7 +33,7 @@ def signal_handler(signal_type, frame):
 
 def start(parent_conn):
     loop_counter = 0
-    internal_cmd = 'stop/'
+    internal_cmd = 'stop/'  # start with 'stop/' to initialize motor driver
     signal.signal(signal.SIGTERM, signal_handler)
     logger.info("Starting drive_controller")
     global rpm_values_right, rpm_values_left, bumper_active, rpm_activated
@@ -78,17 +78,13 @@ def start(parent_conn):
             rpm_values_left.append(left_rpm)
             if rpm_activated:
                 moving_average = sum(rpm_values_right) / len(rpm_values_right)
-                if moving_average > 1.0 and right_rpm < (moving_average * 0.50):
-                    print("Average right", moving_average)
-                    print("Queue right", str(rpm_values_right))
-                    logger.info("Right wheel blocked, stop mower")
+                if moving_average > 1.0 and right_rpm < (moving_average * 0.80):
+                    logger.info("Right wheel blocked, stop mower. Moving average: %s - Left RPM: %s", moving_average, right_rpm)
                     internal_cmd = 'stop/'
 
                 moving_average = sum(rpm_values_left) / len(rpm_values_left)
-                if moving_average > 1.0 and left_rpm < (moving_average * 0.50):
-                    print("Average left", moving_average)
-                    print("Queue left", str(rpm_values_left))
-                    logger.info("Left wheel blocked, stop mower")
+                if moving_average > 1.0 and left_rpm < (moving_average * 0.80):
+                    logger.info("Left wheel blocked, stop mower. Moving average: %s - Left RPM: %s", moving_average, left_rpm)
                     internal_cmd = 'stop/'
 
         # check bumper
@@ -96,7 +92,7 @@ def start(parent_conn):
             volt = analog.get_voltage()
             bumper_values.append(volt)
             moving_average = sum(bumper_values) / len(bumper_values)
-            if volt > (moving_average * 1.3):
+            if volt > (moving_average * 1.08):
                 logger.info("Bumper triggered, stop mower")
                 internal_cmd = 'stop/'
                 bumper_active = True
@@ -104,7 +100,7 @@ def start(parent_conn):
 
         # update drive monoflop
         if (loop_counter % 100) == 0:
-            iqr.set_monoflop(0b0111, 0b0111, 1500)
+            iqr.set_monoflop(0b0111, 0b0111, 1300)
 
         time.sleep(0.01)
 
@@ -114,42 +110,42 @@ def execute_command(cmd, servo):
     split_cmd = cmd.split('/')
     cur_mode = split_cmd[0]
     if cur_mode == 'forward':
+        reset_rpm()
         cur_speed = int(split_cmd[1])
         execute_drive_command(servo, cur_speed, cur_speed)
-        reset_rpm()
     elif cur_mode == 'backward':
+        reset_rpm()
         cur_speed = int(split_cmd[1])
         execute_drive_command(servo, -cur_speed, -cur_speed)
-        reset_rpm()
     elif cur_mode == 'turnL':
-        cur_speed = 3500
+        reset_rpm()
+        cur_speed = 4000
         execute_drive_command(servo, cur_speed, -cur_speed)
-        reset_rpm()
     elif cur_mode == 'turnR':
-        cur_speed = 3500
-        execute_drive_command(servo, -cur_speed, cur_speed)
         reset_rpm()
+        cur_speed = 4000
+        execute_drive_command(servo, -cur_speed, cur_speed)
     elif cur_mode == 'curveL':
+        reset_rpm()
         if split_cmd[1] == 'smooth':
             execute_drive_command(servo, cur_speed, cur_speed - 400)
         elif split_cmd[1] == 'medium':
-            execute_drive_command(servo, cur_speed, cur_speed - 700)
+            execute_drive_command(servo, cur_speed, cur_speed - 800)
         elif split_cmd[1] == 'strong':
-            execute_drive_command(servo, cur_speed, cur_speed - 1100)
-        reset_rpm()
+            execute_drive_command(servo, cur_speed, cur_speed - 1200)
     elif cur_mode == 'curveR':
+        reset_rpm()
         if split_cmd[1] == 'smooth':
             execute_drive_command(servo, cur_speed - 400, cur_speed)
         elif split_cmd[1] == 'medium':
-            execute_drive_command(servo, cur_speed - 700, cur_speed)
+            execute_drive_command(servo, cur_speed - 800, cur_speed)
         elif split_cmd[1] == 'strong':
-            execute_drive_command(servo, cur_speed - 1100, cur_speed)
-        reset_rpm()
+            execute_drive_command(servo, cur_speed - 1200, cur_speed)
     elif cur_mode == 'cutter':
         execute_cutter_command(servo, int(split_cmd[1]))
     elif cur_mode == 'stop':
-        execute_drive_command(servo, 0, 0)
         reset_rpm()
+        execute_drive_command(servo, 0, 0)
     elif cur_mode == 'reset_bumper':
         bumper_active = False
         bumper_values.clear()
