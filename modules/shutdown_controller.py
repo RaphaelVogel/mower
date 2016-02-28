@@ -36,6 +36,4 @@ def start(parent_conn):
             # wait so that the command really reaches main_controller
             time.sleep(3)
 
-        time.sleep(0.3)
-
-
+        time.sleep(0.5)

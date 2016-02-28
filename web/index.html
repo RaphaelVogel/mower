@@ -1,0 +1,101 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Mower</title>
+<script src="/lib/jquery.1.12.js"></script>
+<script src="/lib/jquery-ui.min.js"></script>
+<link href="/lib/jquery-ui.min.css" rel="stylesheet">
+
+<style type="text/css">
+    div.wrapper {
+        width: 250px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+</style>
+
+<script>
+
+	$(function() {
+		/* -------------------------------------------------------------
+		* Drive UI
+		* --------------------------------------------------------------*/
+		$("#forward").bind('touchstart mousedown', function(){
+			sendDriveRequest("forward",$( "#slider" ).slider( "value" ));
+		});
+
+		$("#turnLeft").bind('touchstart mousedown',function(){
+			sendDriveRequest("turnLeft", 0);
+		});
+
+		$("#turnRight").bind('touchstart mousedown',function(){
+			sendDriveRequest("turnRight", 0);
+		});
+
+		$("#backward").bind('touchstart mousedown',function(){
+			sendDriveRequest("backward",$( "#slider" ).slider( "value" ));
+		});
+
+		$("#stop").bind('touchstart mousedown',function(){
+			sendDriveRequest("stop", 0);
+		});
+
+        $( "#slider" ).slider({
+	    	value:3000,
+	        min: 3000,
+	        max: 9000,
+	        step: 1000,
+	        slide: function( event, ui ) {
+	        	$( "#speed" ).html("Geschwindigkeit: " + ui.value);
+	        }
+	    });
+        $( "#speed" ).html( "Geschwindigkeit: 3000" );
+
+
+		/* -------------------------------------------------------------
+		*  Ajax calls
+		*  -------------------------------------------------------------*/
+		function sendDriveRequest(direction, speed){
+			$.ajax({
+				  url: "/drive/"+direction+"/"+speed,
+				  dataType: "text",
+				  success: function(message){
+					  $("#messages").css("color", "black");
+					  $("#messages").val(message);
+				  },
+				  error: function(jqXHR, textStatus, errorThrown){
+					  $("#messages").css("color", "red");
+					  $("#messages").val(errorThrown + ": "+ jqXHR.responseText);
+				  }
+				});
+		}
+		document.body.style.fontSize = '1.2em';
+	});
+	</script>
+</head>
+
+<body>
+	<div class="wrapper">
+        <p>
+            <b>Fahrbefehle</b>
+        </p>
+        <button type="button" id="forward" style="position:relative; left:47px; padding:14px; margin-bottom:5px;">&uarr;</button><br>
+        <button type="button" id="turnLeft" style="padding:14px">&larr;</button>
+        <button type="button" id="stop" style="padding:14px; margin-bottom:5px;">*</button>
+        <button type="button" id="turnRight" class="btn" style="padding:14px">&rarr;</button>
+        <button type="button" id="cutter" class="btn" style="position:relative; left:87px; padding:14px">+</button><br>
+        <button type="button" id="backward" style="position:relative; left:47px; padding:14px">&darr;</button>
+        <p>
+            <div id="slider"></div><br>
+            <div id="speed">Speed:</div>
+        </p>
+        <p>
+            <b>Statusmeldungen</b>
+        </p>
+        <div>
+            <input id="messages" type="text" size="50" readonly="readonly">
+        </div>
+	</div>
+</body>
+</html>

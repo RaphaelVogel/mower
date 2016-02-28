@@ -39,7 +39,7 @@ def start(parent_conn):
     global rpm_values_right, rpm_values_left, bumper_active, rpm_activated
 
     ipcon.connect('localhost', 4223)
-    time.sleep(0.5)
+    time.sleep(0.8)
     servo = BrickServo('6JqqH8', ipcon)
     servo.set_acceleration(2, 30000)  # cutter
     servo.set_velocity(2, 30000)
@@ -92,7 +92,7 @@ def start(parent_conn):
             volt = analog.get_voltage()
             bumper_values.append(volt)
             moving_average = sum(bumper_values) / len(bumper_values)
-            if volt > (moving_average * 1.08):
+            if volt > (moving_average * 1.30):
                 logger.info("Bumper triggered, stop mower")
                 internal_cmd = 'stop/'
                 bumper_active = True
