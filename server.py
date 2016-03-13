@@ -5,12 +5,14 @@ from logging.handlers import RotatingFileHandler
 from bottle import run, route, static_file
 import modules.main_controller as main_controller
 import multiprocessing as mp
+import time
 
 # logger configuration
 logger = logging.getLogger("mower")
-logger.setLevel(logging.WARN)
+logger.setLevel(logging.INFO)
 filehandler = RotatingFileHandler('./mower/log.txt', maxBytes=100000, backupCount=2)
-formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(message)s', datefmt='%d-%m-%Y %H:%M:%S')
+formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(filename)s:%(lineno)s  --  %(message)s',
+    datefmt='%d-%m-%Y %H:%M:%S')
 filehandler.setFormatter(formatter)
 logger.addHandler(filehandler)
 
@@ -27,7 +29,8 @@ def serve_static(filepath):
 
 @route('/drive/<direction>/<speed>')
 def evaluate_drive(direction, speed):
-    print(direction, speed)
+    global main_controller_conn
+    logger.info('Request from UI, direction=%s; speed=%s', direction, speed)
     main_controller_conn.send("drive_conn:" + direction + "/" + speed)
     return dict(status="OK")
 

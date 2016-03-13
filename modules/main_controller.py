@@ -12,6 +12,11 @@ import subprocess
 logger = logging.getLogger("mower")
 
 
+def signal_handler(signal_type, frame):
+    logger.info("Terminate main_controller")
+    sys.exit(0)
+
+
 def start(parent_conn):
     # start shutdown controller
     #shutdown_conn, shutdown_conn1 = mp.Pipe()
@@ -36,10 +41,11 @@ def start(parent_conn):
         if parent_conn.poll():
             connection = parent_conn.recv().split(':')[0]
             command = parent_conn.recv().split(':')[1]
+            logger.info("Call from webserver, connection=%s; command=%s", connection, command)
             if connection == "drive_conn":
                 drive_conn.send(command)
             else:
-                logger.warn("Command", parent_conn.recv(), "does not exist")
+                logger.warn("Wrong command from webserver", parent_conn.recv(), "does not exist")
 
 
         # check for command from shutdown process

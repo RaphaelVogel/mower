@@ -10,7 +10,7 @@ from tinkerforge.bricklet_analog_in import BrickletAnalogIn
 import logging
 from threading import Timer
 
-logger = logging.getLogger("mower_logger")
+logger = logging.getLogger("mower")
 ipcon = IPConnection()
 
 # globals
@@ -35,7 +35,6 @@ def start(parent_conn):
     loop_counter = 0
     internal_cmd = 'stop/'  # start with 'stop/' to initialize motor driver
     signal.signal(signal.SIGTERM, signal_handler)
-    logger.info("Starting drive_controller")
     global rpm_values_right, rpm_values_left, bumper_active, rpm_activated
 
     ipcon.connect('localhost', 4223)
