@@ -7,7 +7,7 @@ import logging
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(4, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # GPIO4 is Board pin 7
 
-logger = logging.getLogger("mower_logger")
+logger = logging.getLogger("mower")
 
 
 def signal_handler(signal_type, frame):
@@ -28,7 +28,7 @@ def start(parent_conn):
                 else:
                     parent_conn.send("reboot")
                     break
-                if presstime > 20:
+                if presstime > 15:
                     parent_conn.send("shutdown")
                     break
                 time.sleep(0.1)
