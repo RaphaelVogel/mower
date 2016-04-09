@@ -2,23 +2,34 @@ import multiprocessing as mp
 #import modules.shutdown_controller as shutdown
 import modules.drive_controller as drive
 import time
+import signal
 from tinkerforge.ip_connection import IPConnection
 from tinkerforge.brick_master import BrickMaster
 import sys
 import logging
+from logging.handlers import RotatingFileHandler
 import mmap
 import subprocess
 
 
 logger = logging.getLogger("mower")
+logger.setLevel(logging.WARN)
+filehandler = RotatingFileHandler('./mower/log.txt', maxBytes=100000, backupCount=2)
+formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(filename)s:%(lineno)s  --  %(message)s',
+    datefmt='%d-%m-%Y %H:%M:%S')
+filehandler.setFormatter(formatter)
+logger.addHandler(filehandler)
 
 
 def signal_handler(signal_type, frame):
-    logger.info("Terminate main_controller")
+    if ipcon.get_connection_state() == IPConnection.CONNECTION_STATE_CONNECTED:
+        ipcon.disconnect()
+    logger.warn("Terminate main_controller")
     sys.exit(0)
 
 
 if __name__ == "__main__":
+    signal.signal(signal.SIGTERM, signal_handler)
     # start shutdown controller
     #shutdown_conn, shutdown_conn1 = mp.Pipe()
     #p_shutdown = mp.Process(target=shutdown.start, args=(shutdown_conn1,), name="Shutdown Process")
@@ -43,13 +54,14 @@ if __name__ == "__main__":
         if loop_counter > 30000:
             loop_counter = 0
 
-        if (loop_counter % 100) == 0:
+        if (loop_counter % 50) == 0:
             # check for command from web server. Syntax: <connection>:<command> e.g. drive_conn:forward/4000
             with open("mower/command.txt", "r+") as file:
-                web_command = file.readline()
+                mm = mmap.mmap(file.fileno(), 0)
+                web_command = mm.readline().decode('utf-8').strip()
                 if web_command:
-                    file.seek(0)
-                    file.truncate()
+                    mm.seek(0)
+                    mm.write(b"                                        ")
                     command_split = web_command.split(':')
                     connection = command_split[0]
                     command = command_split[1]
@@ -57,7 +69,7 @@ if __name__ == "__main__":
                     if connection == "drive_conn":
                         drive_conn.send(command)
                     else:
-                        logger.warn("Wrong command from webserver", web_command, "does not exist")
+                        logger.error("Wrong command from webserver", web_command, "does not exist")
 
 
         # check for command from shutdown process

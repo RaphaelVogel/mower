@@ -27,7 +27,7 @@ bumper_values = deque(maxlen=20)  # queue for calculating moving average of bump
 def signal_handler(signal_type, frame):
     if ipcon.get_connection_state() == IPConnection.CONNECTION_STATE_CONNECTED:
         ipcon.disconnect()
-    logger.info("Terminate drive_controller")
+    logger.warn("Terminate drive_controller")
     sys.exit(0)
 
 
@@ -78,12 +78,12 @@ def start(parent_conn):
             if rpm_activated:
                 moving_average = sum(rpm_values_right) / len(rpm_values_right)
                 if moving_average > 1.0 and right_rpm < (moving_average * 0.80):
-                    logger.info("Right wheel blocked, stop mower. Moving average: %s - Left RPM: %s", moving_average, right_rpm)
+                    logger.warn("Right wheel blocked, stop mower. Moving average: %s - Left RPM: %s", moving_average, right_rpm)
                     internal_cmd = 'stop/'
 
                 moving_average = sum(rpm_values_left) / len(rpm_values_left)
                 if moving_average > 1.0 and left_rpm < (moving_average * 0.80):
-                    logger.info("Left wheel blocked, stop mower. Moving average: %s - Left RPM: %s", moving_average, left_rpm)
+                    logger.warn("Left wheel blocked, stop mower. Moving average: %s - Left RPM: %s", moving_average, left_rpm)
                     internal_cmd = 'stop/'
 
         # check bumper
@@ -92,7 +92,7 @@ def start(parent_conn):
             bumper_values.append(volt)
             moving_average = sum(bumper_values) / len(bumper_values)
             if volt > (moving_average * 1.30):
-                logger.info("Bumper triggered, stop mower")
+                logger.warn("Bumper triggered, stop mower")
                 internal_cmd = 'stop/'
                 bumper_active = True
                 parent_conn.send("bumper_active")
