@@ -7,7 +7,7 @@ import mmap
 
 # logger configuration
 logger = logging.getLogger("mower")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 filehandler = RotatingFileHandler('./mower/log.txt', maxBytes=100000, backupCount=2)
 formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(filename)s:%(lineno)s  --  %(message)s',
     datefmt='%d-%m-%Y %H:%M:%S')

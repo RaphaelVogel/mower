@@ -47,7 +47,7 @@ if __name__ == "__main__":
             # check for command from web server. Syntax: <connection>:<command> e.g. drive_conn:forward/4000
             with open("mower/command.txt", "r+") as file:
                 web_command = file.readline()
-                if "drive_conn" in web_command:
+                if web_command:
                     file.seek(0)
                     file.truncate()
                     command_split = web_command.split(':')
