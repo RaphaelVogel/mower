@@ -3,9 +3,7 @@ import sys
 import logging
 from logging.handlers import RotatingFileHandler
 from bottle import run, route, static_file
-import modules.main_controller as main_controller
-import multiprocessing as mp
-import time
+import mmap
 
 # logger configuration
 logger = logging.getLogger("mower")
@@ -29,18 +27,16 @@ def serve_static(filepath):
 
 @route('/drive/<direction>/<speed>')
 def evaluate_drive(direction, speed):
-    global main_controller_conn
     logger.info('Request from UI, direction=%s; speed=%s', direction, speed)
-    main_controller_conn.send("drive_conn:" + direction + "/" + speed)
+    with open("mower/command.txt", "w") as file:
+        cmd = "drive_conn:" + direction + "/" + speed
+        file.write(cmd)
+
     return dict(status="OK")
 
 
 if __name__ == "__main__":
-    mp.set_start_method('spawn')
-    main_controller_conn, main_controller_conn1 = mp.Pipe()
-    p_main_controller = mp.Process(target=main_controller.start, args=(main_controller_conn1,), name="Maincontroller Process")
-    p_main_controller.daemon = False
-    p_main_controller.start()
+    f = open("mower/command.txt", 'w').close()
 
     if len(sys.argv) > 1 and sys.argv[1] == 'devmode':
         run(server='cherrypy', host='localhost', port=8080, debug=True, reloader=True)
