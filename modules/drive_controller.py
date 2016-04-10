@@ -118,11 +118,11 @@ def execute_command(cmd, servo):
         execute_drive_command(servo, -cur_speed, -cur_speed)
     elif cur_mode == 'turnL':
         reset_rpm()
-        cur_speed = 4000
+        cur_speed = 4500
         execute_drive_command(servo, cur_speed, -cur_speed)
     elif cur_mode == 'turnR':
         reset_rpm()
-        cur_speed = 4000
+        cur_speed = 4500
         execute_drive_command(servo, -cur_speed, cur_speed)
     elif cur_mode == 'curveL':
         reset_rpm()
