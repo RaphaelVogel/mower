@@ -95,7 +95,7 @@ def start(parent_conn):
                 logger.warn("Bumper triggered, stop mower")
                 internal_cmd = 'stop/'
                 bumper_active = True
-                parent_conn.send("bumper_active")
+                parent_conn.send("bumper_active:" + str(cur_speed))
 
         # update drive monoflop
         if (loop_counter % 100) == 0:
@@ -105,7 +105,7 @@ def start(parent_conn):
 
 
 def execute_command(cmd, servo):
-    global cur_mode, cur_speed, bumper_active, bumper_values
+    global cur_mode, cur_speed, bumper_active, bumper_values, cutter_speed
     split_cmd = cmd.split('/')
     cur_mode = split_cmd[0]
     if cur_mode == 'forward':
@@ -118,12 +118,10 @@ def execute_command(cmd, servo):
         execute_drive_command(servo, -cur_speed, -cur_speed)
     elif cur_mode == 'turnL':
         reset_rpm()
-        cur_speed = 4500
-        execute_drive_command(servo, cur_speed, -cur_speed)
+        execute_drive_command(servo, 4500, -4500)
     elif cur_mode == 'turnR':
         reset_rpm()
-        cur_speed = 4500
-        execute_drive_command(servo, -cur_speed, cur_speed)
+        execute_drive_command(servo, -4500, 4500)
     elif cur_mode == 'curveL':
         reset_rpm()
         if split_cmd[1] == 'smooth':

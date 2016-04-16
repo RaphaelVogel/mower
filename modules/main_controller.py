@@ -9,6 +9,7 @@ import sys
 import logging
 from logging.handlers import RotatingFileHandler
 import mmap
+import random
 import subprocess
 
 
@@ -19,6 +20,8 @@ formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(filename)s:%(line
     datefmt='%d-%m-%Y %H:%M:%S')
 filehandler.setFormatter(formatter)
 logger.addHandler(filehandler)
+
+left_right = ['turnL/', 'turnR/']
 
 
 def signal_handler(signal_type, frame):
@@ -46,7 +49,7 @@ if __name__ == "__main__":
     ipcon.connect('localhost', 4223)
     time.sleep(0.5)
     master = BrickMaster('5Wr87j', ipcon)
-    time.sleep(8)
+    time.sleep(5)
     loop_counter = 0
 
     while True:
@@ -84,19 +87,20 @@ if __name__ == "__main__":
 
         # check for command from drive process
         if drive_conn.poll():
-            cmd = drive_conn.recv()
-            if cmd == "bumper_active":
+            split_cmd = drive_conn.recv().split(':')
+            if split_cmd[0] == "bumper_active":
                 time.sleep(0.6)
-                drive_conn.send("backward/3500")
+                drive_conn.send("backward/4500")
                 time.sleep(2.5)
                 drive_conn.send("stop/")
                 time.sleep(0.6)
-                drive_conn.send("turnL/")
+                drive_conn.send(random.choice(left_right))
                 drive_conn.send("reset_bumper/")
-                time.sleep(2.5)
+                turn_time = round(random.uniform(1.8, 3.5), 2)
+                time.sleep(turn_time)
                 drive_conn.send("stop/")
                 time.sleep(0.6)
-                drive_conn.send("forward/3500")
+                drive_conn.send("forward/" + split_cmd[1])
 
         time.sleep(0.01)
 

@@ -21,7 +21,17 @@ def evaluate_drive(direction, speed):
         cmd = "drive_conn:" + direction + "/" + speed
         mm.write(cmd.encode('utf-8'))
 
-    return dict(status="OK")
+    return dict(status="Send drive command")
+
+
+@route('/cutter/<speed>')
+def evaluate_cutter(speed):
+    with open("mower/command.txt", "r+") as file:
+        mm = mmap.mmap(file.fileno(), 0)
+        cmd = "drive_conn:cutter/" + speed
+        mm.write(cmd.encode('utf-8'))
+
+    return dict(status="Send cutter command")
 
 
 if __name__ == "__main__":

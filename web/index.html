@@ -12,6 +12,7 @@
         width: 900px;
         margin-left: auto;
         margin-right: auto;
+        margin-top: 50px;
     }
     body {
         font-family: Arial, Helvetica, sans-serif;
@@ -45,6 +46,15 @@
 			sendDriveRequest("stop", 0);
 		});
 
+		$("#cutter_on").bind('touchstart mousedown',function(){
+			sendCutterRequest($( "#slider" ).slider( "value" ));
+		});
+
+		$("#cutter_off").bind('touchstart mousedown',function(){
+			sendCutterRequest('0');
+		});
+
+
         $( "#slider" ).slider({
 	    	value:3000,
 	        min: 3000,
@@ -74,6 +84,22 @@
 				  }
 				});
 		}
+
+		function sendCutterRequest(speed){
+			$.ajax({
+				  url: "/cutter/"+speed,
+				  dataType: "text",
+				  success: function(message){
+					  $("#messages").css("color", "black");
+					  $("#messages").val(message);
+				  },
+				  error: function(jqXHR, textStatus, errorThrown){
+					  $("#messages").css("color", "red");
+					  $("#messages").val(errorThrown + ": "+ jqXHR.responseText);
+				  }
+				});
+		}
+
 	});
 	</script>
 </head>
@@ -83,9 +109,11 @@
         <button type="button" id="forward" style="position:relative; left:190px; font-size: 2.0em; margin:10px;">&nbsp;&uarr;&nbsp;</button><br>
         <button type="button" id="turnLeft" style="font-size: 2.0em; margin:10px;">&larr;</button>
         <button type="button" id="stop" style="font-size: 2.0em; margin:10px;">&nbsp;*&nbsp; </button>
-        <button type="button" id="turnRight" class="btn" style="font-size: 2.0em; margin:10px;">&rarr;</button>&nbsp;&nbsp;&nbsp;&nbsp;
-        <button type="button" id="stop" style="font-size: 2.0em; margin:10px;">&nbsp;+&nbsp;</button><br>
-        <button type="button" id="backward" style="position:relative; left:190px; font-size: 2.0em; margin:10px;">&nbsp;&darr;&nbsp;</button>
+        <button type="button" id="turnRight" class="btn" style="font-size: 2.0em; margin:10px;">&rarr;</button><br>
+        <button type="button" id="backward" style="position:relative; left:190px; font-size: 2.0em; margin:10px;">&nbsp;&darr;&nbsp;</button><br>
+        <br><br>
+        <button type="button" id="cutter_on" style="font-size: 2.0em; margin:10px;">&nbsp;ON&nbsp;</button>
+        <button type="button" id="cutter_off" style="font-size: 2.0em; margin:10px;">&nbsp;OFF&nbsp;</button><br>
         <p style="margin:80px;">
             <div id="slider" style="font-size: 1.6em;"></div><br>
             <div id="speed" style="font-size: 1.6em;"></div>
