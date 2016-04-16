@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import multiprocessing as mp
 import modules.shutdown_controller as shutdown
 import modules.drive_controller as drive
