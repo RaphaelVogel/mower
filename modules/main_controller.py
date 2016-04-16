@@ -1,5 +1,5 @@
 import multiprocessing as mp
-#import modules.shutdown_controller as shutdown
+import modules.shutdown_controller as shutdown
 import modules.drive_controller as drive
 import time
 import signal
@@ -34,10 +34,10 @@ def signal_handler(signal_type, frame):
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, signal_handler)
     # start shutdown controller
-    #shutdown_conn, shutdown_conn1 = mp.Pipe()
-    #p_shutdown = mp.Process(target=shutdown.start, args=(shutdown_conn1,), name="Shutdown Process")
-    #p_shutdown.daemon = True
-    #p_shutdown.start()
+    shutdown_conn, shutdown_conn1 = mp.Pipe()
+    p_shutdown = mp.Process(target=shutdown.start, args=(shutdown_conn1,), name="Shutdown Process")
+    p_shutdown.daemon = True
+    p_shutdown.start()
 
     # start drive controller
     drive_conn, drive_conn1 = mp.Pipe()
@@ -74,16 +74,15 @@ if __name__ == "__main__":
                     else:
                         logger.error("Wrong command from webserver", web_command, "does not exist")
 
-
         # check for command from shutdown process
-        #if shutdown_conn.poll():
-        #    master.reset()
-        #    cmd = shutdown_conn.recv()
-        #    if cmd == "reboot":
-        #        subprocess.call(["sudo", "reboot"])
-        #    elif cmd == "shutdown":
-        #        subprocess.call(["sudo", "shutdown", "-h", "now"])
-        #    break
+        if shutdown_conn.poll():
+            master.reset()
+            cmd = shutdown_conn.recv()
+            if cmd == "reboot":
+                subprocess.call(["sudo", "reboot"])
+            elif cmd == "shutdown":
+                subprocess.call(["sudo", "shutdown", "-h", "now"])
+            break
 
         # check for command from drive process
         if drive_conn.poll():
