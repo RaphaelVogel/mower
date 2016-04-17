@@ -14,7 +14,7 @@ logger = logging.getLogger("mower")
 ipcon = IPConnection()
 
 # globals
-cur_mode = 'stop'
+cur_mode = None
 cur_speed = 0
 bumper_active = False
 rpm_activated = False
@@ -50,6 +50,10 @@ def start(parent_conn):
     iqr.set_monoflop(0b0111, 0b0111, 1500)
     analog = BrickletAnalogIn('bK7', ipcon)
     analog.set_range(BrickletAnalogIn.RANGE_UP_TO_6V)
+
+    # initialize speed controller
+    execute_command('stop/', servo)
+    execute_command('cutter/0', servo)
 
     while True:
         loop_counter += 1

@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     ipcon = IPConnection()
     ipcon.connect('localhost', 4223)
-    time.sleep(0.5)
+    time.sleep(0.8)
     master = BrickMaster('5Wr87j', ipcon)
     time.sleep(4)
     loop_counter = 0
