@@ -35,7 +35,7 @@ def evaluate_cutter(speed):
 
 
 if __name__ == "__main__":
-    f = open("home/pi/mower/command.txt", 'wb')
+    f = open("/home/pi/mower/command.txt", 'wb')
     f.write(b"                                        ")
     f.close()
     if len(sys.argv) > 1 and sys.argv[1] == 'devmode':
