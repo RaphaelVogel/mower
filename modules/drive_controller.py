@@ -105,7 +105,7 @@ def start(parent_conn):
 
 
 def execute_command(cmd, servo):
-    global cur_mode, cur_speed, bumper_active, bumper_values, cutter_speed
+    global cur_mode, cur_speed, bumper_active, bumper_values
     split_cmd = cmd.split('/')
     cur_mode = split_cmd[0]
     if cur_mode == 'forward':
