@@ -16,7 +16,7 @@ import subprocess
 
 logger = logging.getLogger("mower")
 logger.setLevel(logging.WARN)
-filehandler = RotatingFileHandler('mower/main_controller.log', maxBytes=100000, backupCount=2)
+filehandler = RotatingFileHandler('/home/pi/mower/main_controller.log', maxBytes=100000, backupCount=2)
 formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(filename)s:%(lineno)s  --  %(message)s',
     datefmt='%d-%m-%Y %H:%M:%S')
 filehandler.setFormatter(formatter)
@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
         if (loop_counter % 50) == 0:
             # check for command from web server. Syntax: <connection>:<command> e.g. drive_conn:forward/4000
-            with open("mower/command.txt", "r+") as file:
+            with open("/home/pi/mower/command.txt", "r+") as file:
                 mm = mmap.mmap(file.fileno(), 0)
                 web_command = mm.readline().decode('utf-8').strip()
                 if web_command:

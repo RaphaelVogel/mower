@@ -6,17 +6,17 @@ import mmap
 
 @route('/')
 def index():
-    return static_file('index.html', root='mower/web')
+    return static_file('index.html', root='/home/pi/mower/web')
 
 
 @route('/lib/<filepath:path>')
 def serve_static(filepath):
-    return static_file(filepath, root='mower/web/lib')
+    return static_file(filepath, root='/home/pi/mower/web/lib')
 
 
 @route('/drive/<direction>/<speed>')
 def evaluate_drive(direction, speed):
-    with open("mower/command.txt", "r+") as file:
+    with open("/home/pi/mower/command.txt", "r+") as file:
         mm = mmap.mmap(file.fileno(), 0)
         cmd = "drive_conn:" + direction + "/" + speed
         mm.write(cmd.encode('utf-8'))
@@ -26,7 +26,7 @@ def evaluate_drive(direction, speed):
 
 @route('/cutter/<speed>')
 def evaluate_cutter(speed):
-    with open("mower/command.txt", "r+") as file:
+    with open("/home/pi/mower/command.txt", "r+") as file:
         mm = mmap.mmap(file.fileno(), 0)
         cmd = "drive_conn:cutter/" + speed
         mm.write(cmd.encode('utf-8'))
@@ -35,7 +35,7 @@ def evaluate_cutter(speed):
 
 
 if __name__ == "__main__":
-    f = open("mower/command.txt", 'wb')
+    f = open("home/pi/mower/command.txt", 'wb')
     f.write(b"                                        ")
     f.close()
     if len(sys.argv) > 1 and sys.argv[1] == 'devmode':
