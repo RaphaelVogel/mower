@@ -34,6 +34,7 @@ def signal_handler(signal_type, frame):
 
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, signal_handler)
+    time.sleep(1)
     # start shutdown controller
     shutdown_conn, shutdown_conn1 = mp.Pipe()
     p_shutdown = mp.Process(target=shutdown.start, args=(shutdown_conn1,), name="Shutdown Process")
@@ -50,7 +51,7 @@ if __name__ == "__main__":
     ipcon.connect('localhost', 4223)
     time.sleep(0.5)
     master = BrickMaster('5Wr87j', ipcon)
-    time.sleep(5)
+    time.sleep(4)
     loop_counter = 0
 
     while True:
