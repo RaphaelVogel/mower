@@ -6,4 +6,4 @@ tools/config.txt
 __init__.pyc
 *.pyc
 web/lib/*
-command.txt
+modules/command.txt
