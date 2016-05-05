@@ -51,7 +51,7 @@ if __name__ == "__main__":
     ipcon.connect('localhost', 4223)
     time.sleep(0.8)
     master = BrickMaster('5Wr87j', ipcon)
-    time.sleep(4)
+    time.sleep(3)
     loop_counter = 0
 
     while True:
@@ -90,30 +90,30 @@ if __name__ == "__main__":
         if drive_conn.poll():
             split_cmd = drive_conn.recv().split(':')
             if split_cmd[0] == "bumper_active":
-                time.sleep(0.1)
+                time.sleep(0.5)
                 drive_conn.send("backward/5000")
                 time.sleep(2.0)
                 drive_conn.send("stop/")
-                time.sleep(0.1)
+                time.sleep(0.5)
                 drive_conn.send(random.choice(left_right))
                 turn_time = round(random.uniform(2.0, 3.0), 2)
                 time.sleep(turn_time)
                 drive_conn.send("stop/")
                 drive_conn.send("reset_bumper/")
-                time.sleep(0.2)
+                time.sleep(0.5)
                 drive_conn.send("forward/" + split_cmd[1])
             if split_cmd[0] == "fence_active":
-                time.sleep(0.1)
+                time.sleep(0.5)
                 drive_conn.send("backward/5000")
                 time.sleep(1.0)
                 drive_conn.send("stop/")
-                time.sleep(0.1)
+                time.sleep(0.5)
                 drive_conn.send(random.choice(left_right))
                 turn_time = round(random.uniform(1.8, 3.5), 2)
                 time.sleep(turn_time)
                 drive_conn.send("stop/")
                 drive_conn.send("reset_fence/")
-                time.sleep(0.2)
+                time.sleep(0.5)
                 drive_conn.send("forward/" + split_cmd[1])
 
         time.sleep(0.01)
