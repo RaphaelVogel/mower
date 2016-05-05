@@ -28,7 +28,7 @@ fence_values = deque(maxlen=20)  # queue for calculating moving average of fence
 def signal_handler(signal_type, frame):
     if ipcon.get_connection_state() == IPConnection.CONNECTION_STATE_CONNECTED:
         ipcon.disconnect()
-    logger.warn("Terminate drive_controller")
+    logger.info("Terminate drive_controller")
     sys.exit(0)
 
 
@@ -39,7 +39,7 @@ def start(parent_conn):
     global rpm_values_right, rpm_values_left, bumper_active, rpm_activated, fence_active
 
     ipcon.connect('localhost', 4223)
-    time.sleep(0.8)
+    time.sleep(1.0)
     servo = BrickServo('6JqqH8', ipcon)
     servo.set_acceleration(2, 30000)  # cutter
     servo.set_velocity(2, 30000)

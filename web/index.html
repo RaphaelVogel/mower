@@ -31,11 +31,11 @@
 		});
 
 		$("#turnLeft").bind('touchstart mousedown',function(){
-			sendDriveRequest("turnLeft", 0);
+			sendDriveRequest("turnL", 0);
 		});
 
 		$("#turnRight").bind('touchstart mousedown',function(){
-			sendDriveRequest("turnRight", 0);
+			sendDriveRequest("turnR", 0);
 		});
 
 		$("#backward").bind('touchstart mousedown',function(){
@@ -54,6 +54,9 @@
 			sendCutterRequest('0');
 		});
 
+        $("#get_voltage").bind('touchstart mousedown',function(){
+			getVoltageRequest();
+		});
 
         $( "#slider" ).slider({
 	    	value:3000,
@@ -100,6 +103,21 @@
 				});
 		}
 
+		function getVoltageRequest(){
+			$.ajax({
+				  url: "/master/getVoltage",
+				  dataType: "text",
+				  success: function(message){
+					  $("#messages").css("color", "black");
+					  $("#messages").val(message);
+				  },
+				  error: function(jqXHR, textStatus, errorThrown){
+					  $("#messages").css("color", "red");
+					  $("#messages").val(errorThrown + ": "+ jqXHR.responseText);
+				  }
+				});
+		}
+
 	});
 	</script>
 </head>
@@ -113,7 +131,8 @@
         <button type="button" id="backward" style="position:relative; left:190px; font-size: 2.0em; margin:10px;">&nbsp;&darr;&nbsp;</button><br>
         <br><br>
         <button type="button" id="cutter_on" style="font-size: 2.0em; margin:10px;">&nbsp;ON&nbsp;</button>
-        <button type="button" id="cutter_off" style="font-size: 2.0em; margin:10px;">&nbsp;OFF&nbsp;</button><br>
+        <button type="button" id="cutter_off" style="font-size: 2.0em; margin:10px;">&nbsp;OFF&nbsp;</button><br><br>
+        <button type="button" id="get_voltage" style="font-size: 2.0em; margin:10px;">&nbsp;Get Voltage&nbsp;</button>
         <p style="margin:80px;">
             <div id="slider" style="font-size: 1.6em;"></div><br>
             <div id="speed" style="font-size: 1.6em;"></div>

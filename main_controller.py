@@ -28,7 +28,7 @@ left_right = ['turnL/', 'turnR/']
 def signal_handler(signal_type, frame):
     if ipcon.get_connection_state() == IPConnection.CONNECTION_STATE_CONNECTED:
         ipcon.disconnect()
-    logger.warn("Terminate main_controller")
+    logger.info("Terminate main_controller")
     sys.exit(0)
 
 
@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     ipcon = IPConnection()
     ipcon.connect('localhost', 4223)
-    time.sleep(0.8)
+    time.sleep(1.0)
     master = BrickMaster('5Wr87j', ipcon)
     time.sleep(3)
     loop_counter = 0
@@ -84,6 +84,8 @@ if __name__ == "__main__":
                 subprocess.call(["sudo", "reboot"])
             elif cmd == "shutdown":
                 subprocess.call(["sudo", "shutdown", "-h", "now"])
+            elif cmd == "undervoltage":
+                drive_conn.send("stop/")
             break
 
         # check for command from drive process

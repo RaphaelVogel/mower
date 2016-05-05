@@ -1,7 +1,10 @@
 #!/usr/bin/python3
 import sys
+import time
 from bottle import run, route, static_file
 import mmap
+from tinkerforge.ip_connection import IPConnection
+from tinkerforge.brick_master import BrickMaster
 
 
 @route('/')
@@ -21,7 +24,7 @@ def evaluate_drive(direction, speed):
         cmd = "drive_conn:" + direction + "/" + speed
         mm.write(cmd.encode('utf-8'))
 
-    return dict(status="Send drive command")
+    return dict(status="Send drive command " + direction + "/" + speed)
 
 
 @route('/cutter/<speed>')
@@ -31,13 +34,24 @@ def evaluate_cutter(speed):
         cmd = "drive_conn:cutter/" + speed
         mm.write(cmd.encode('utf-8'))
 
-    return dict(status="Send cutter command")
+    return dict(status="Send cutter command cutter/" + speed)
+
+
+@route('/master/getVoltage')
+def get_voltage():
+    stack_voltage = master.get_stack_voltage() / 1000.0
+    return dict(stack_voltage=str(stack_voltage))
 
 
 if __name__ == "__main__":
     f = open("/home/pi/mower/command.txt", 'wb')
     f.write(b"                                        ")
     f.close()
+    ipcon = IPConnection()
+    ipcon.connect('localhost', 4223)
+    time.sleep(1.0)
+    master = BrickMaster('5Wr87j', ipcon)
+
     if len(sys.argv) > 1 and sys.argv[1] == 'devmode':
         run(server='cherrypy', host='localhost', port=8080, debug=True, reloader=True)
     else:
