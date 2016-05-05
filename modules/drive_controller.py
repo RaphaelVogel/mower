@@ -82,12 +82,12 @@ def start(parent_conn):
             rpm_values_left.append(left_rpm)
             if rpm_activated:
                 moving_average = sum(rpm_values_right) / len(rpm_values_right)
-                if moving_average > 1.0 and right_rpm < (moving_average * 0.80):
+                if moving_average > 1.0 and right_rpm < (moving_average * 0.60):
                     logger.warn("Right wheel blocked, stop mower. Moving average: %s - Left RPM: %s", moving_average, right_rpm)
                     internal_cmd = 'stop/'
 
                 moving_average = sum(rpm_values_left) / len(rpm_values_left)
-                if moving_average > 1.0 and left_rpm < (moving_average * 0.80):
+                if moving_average > 1.0 and left_rpm < (moving_average * 0.60):
                     logger.warn("Left wheel blocked, stop mower. Moving average: %s - Left RPM: %s", moving_average, left_rpm)
                     internal_cmd = 'stop/'
 
@@ -103,15 +103,15 @@ def start(parent_conn):
                 parent_conn.send("bumper_active:" + str(cur_speed))
 
         # check fence
-        if not fence_active and ((loop_counter + 2) % 4) == 0:
-            volt = analog1.get_voltage()
-            fence_values.append(volt)
-            moving_average = sum(fence_values) / len(fence_values)
-            if volt > (moving_average * 3.0):
-                logger.warn("Fence triggered, stop mower")
-                internal_cmd = 'stop/'
-                fence_active = True
-                parent_conn.send("fence_active:" + str(cur_speed))
+#        if not fence_active and ((loop_counter + 2) % 4) == 0:
+#            volt = analog1.get_voltage()
+#            fence_values.append(volt)
+#            moving_average = sum(fence_values) / len(fence_values)
+#            if volt > (moving_average * 3.0):
+#                logger.warn("Fence triggered, stop mower")
+#                internal_cmd = 'stop/'
+#                fence_active = True
+#                parent_conn.send("fence_active:" + str(cur_speed))
 
         # update drive monoflop
         if (loop_counter % 100) == 0:
@@ -134,26 +134,26 @@ def execute_command(cmd, servo):
         execute_drive_command(servo, -cur_speed, -cur_speed)
     elif cur_mode == 'turnL':
         reset_rpm()
-        execute_drive_command(servo, 5000, -5000)
+        execute_drive_command(servo, 6000, -6000)
     elif cur_mode == 'turnR':
         reset_rpm()
-        execute_drive_command(servo, -5000, 5000)
+        execute_drive_command(servo, -6000, 6000)
     elif cur_mode == 'curveL':
         reset_rpm()
         if split_cmd[1] == 'smooth':
-            execute_drive_command(servo, cur_speed, cur_speed - 400)
+            execute_drive_command(servo, cur_speed, cur_speed - 500)
         elif split_cmd[1] == 'medium':
-            execute_drive_command(servo, cur_speed, cur_speed - 800)
+            execute_drive_command(servo, cur_speed, cur_speed - 900)
         elif split_cmd[1] == 'strong':
-            execute_drive_command(servo, cur_speed, cur_speed - 1200)
+            execute_drive_command(servo, cur_speed, cur_speed - 1300)
     elif cur_mode == 'curveR':
         reset_rpm()
         if split_cmd[1] == 'smooth':
-            execute_drive_command(servo, cur_speed - 400, cur_speed)
+            execute_drive_command(servo, cur_speed - 500, cur_speed)
         elif split_cmd[1] == 'medium':
-            execute_drive_command(servo, cur_speed - 800, cur_speed)
+            execute_drive_command(servo, cur_speed - 900, cur_speed)
         elif split_cmd[1] == 'strong':
-            execute_drive_command(servo, cur_speed - 1200, cur_speed)
+            execute_drive_command(servo, cur_speed - 1300, cur_speed)
     elif cur_mode == 'cutter':
         execute_cutter_command(servo, int(split_cmd[1]))
     elif cur_mode == 'stop':

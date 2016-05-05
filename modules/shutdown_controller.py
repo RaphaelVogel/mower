@@ -28,7 +28,7 @@ def start(parent_conn):
                 else:
                     parent_conn.send("reboot")
                     break
-                if presstime > 15:
+                if presstime > 20:
                     parent_conn.send("shutdown")
                     break
                 time.sleep(0.1)
@@ -36,4 +36,4 @@ def start(parent_conn):
             # wait so that the command really reaches main_controller
             time.sleep(3)
 
-        time.sleep(0.5)
+        time.sleep(0.4)
