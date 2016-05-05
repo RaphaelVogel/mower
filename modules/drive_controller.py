@@ -14,14 +14,15 @@ logger = logging.getLogger("mower")
 ipcon = IPConnection()
 
 # globals
-cur_mode = None
 cur_speed = 0
 bumper_active = False
+fence_active = False
 rpm_activated = False
 
 rpm_values_right = deque(maxlen=20)  # queue for calculating moving average of right wheel
 rpm_values_left = deque(maxlen=20)  # queue for calculating moving average of left wheel
 bumper_values = deque(maxlen=20)  # queue for calculating moving average of bumper values
+fence_values = deque(maxlen=20)  # queue for calculating moving average of fence values
 
 
 def signal_handler(signal_type, frame):
@@ -35,7 +36,7 @@ def start(parent_conn):
     loop_counter = 0
     internal_cmd = 'stop/'  # start with 'stop/' to initialize motor driver
     signal.signal(signal.SIGTERM, signal_handler)
-    global rpm_values_right, rpm_values_left, bumper_active, rpm_activated
+    global rpm_values_right, rpm_values_left, bumper_active, rpm_activated, fence_active
 
     ipcon.connect('localhost', 4223)
     time.sleep(0.8)
@@ -48,8 +49,8 @@ def start(parent_conn):
     io16.set_edge_count_config(1, BrickletIO16.EDGE_TYPE_BOTH, 1)  # set pin 1 for edge count
     iqr = BrickletIndustrialQuadRelay('mT2', ipcon)
     iqr.set_monoflop(0b0111, 0b0111, 1500)
-    analog = BrickletAnalogIn('bK7', ipcon)
-    analog.set_range(BrickletAnalogIn.RANGE_UP_TO_6V)
+    analog1 = BrickletAnalogIn('bK7', ipcon)
+    analog1.set_range(BrickletAnalogIn.RANGE_UP_TO_6V)
 
     # initialize speed controller
     execute_command('stop/', servo)
@@ -62,7 +63,7 @@ def start(parent_conn):
 
         # commands: forward/<speed>, backward/<speed>, turnL/, turnR/,
         # curveL/<smooth|medium|strong>, curveR/<smooth|medium|strong>, cutter/<speed>, stop/
-        # reset_bumper/
+        # reset_bumper/, reset_fence/
         if internal_cmd is not None:
             cmd = internal_cmd
             internal_cmd = None
@@ -91,8 +92,8 @@ def start(parent_conn):
                     internal_cmd = 'stop/'
 
         # check bumper
-        if not bumper_active and ((loop_counter + 2) % 4) == 0:
-            volt = analog.get_voltage()
+        if not bumper_active and ((loop_counter + 1) % 4) == 0:
+            volt = analog1.get_voltage()
             bumper_values.append(volt)
             moving_average = sum(bumper_values) / len(bumper_values)
             if volt > (moving_average * 1.30):
@@ -100,6 +101,17 @@ def start(parent_conn):
                 internal_cmd = 'stop/'
                 bumper_active = True
                 parent_conn.send("bumper_active:" + str(cur_speed))
+
+        # check fence
+        if not fence_active and ((loop_counter + 2) % 4) == 0:
+            volt = analog1.get_voltage()
+            fence_values.append(volt)
+            moving_average = sum(fence_values) / len(fence_values)
+            if volt > (moving_average * 3.0):
+                logger.warn("Fence triggered, stop mower")
+                internal_cmd = 'stop/'
+                fence_active = True
+                parent_conn.send("fence_active:" + str(cur_speed))
 
         # update drive monoflop
         if (loop_counter % 100) == 0:
@@ -109,10 +121,10 @@ def start(parent_conn):
 
 
 def execute_command(cmd, servo):
-    global cur_mode, cur_speed, bumper_active, bumper_values
+    global cur_speed, bumper_active, bumper_values, fence_active
     split_cmd = cmd.split('/')
     cur_mode = split_cmd[0]
-    if cur_mode == 'forward':
+    if cur_mode == 'forward' and not bumper_active and not fence_active:
         reset_rpm()
         cur_speed = int(split_cmd[1])
         execute_drive_command(servo, cur_speed, cur_speed)
@@ -122,10 +134,10 @@ def execute_command(cmd, servo):
         execute_drive_command(servo, -cur_speed, -cur_speed)
     elif cur_mode == 'turnL':
         reset_rpm()
-        execute_drive_command(servo, 4500, -4500)
+        execute_drive_command(servo, 5000, -5000)
     elif cur_mode == 'turnR':
         reset_rpm()
-        execute_drive_command(servo, -4500, 4500)
+        execute_drive_command(servo, -5000, 5000)
     elif cur_mode == 'curveL':
         reset_rpm()
         if split_cmd[1] == 'smooth':
@@ -150,6 +162,9 @@ def execute_command(cmd, servo):
     elif cur_mode == 'reset_bumper':
         bumper_active = False
         bumper_values.clear()
+    elif cur_mode == 'reset_fence':
+        fence_active = False
+        fence_values.clear()
 
 
 # execute a drive command
