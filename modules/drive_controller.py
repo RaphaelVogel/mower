@@ -23,7 +23,6 @@ rpm_activated = False
 rpm_values_right = deque(maxlen=20)  # queue for calculating moving average of right wheel
 rpm_values_left = deque(maxlen=20)  # queue for calculating moving average of left wheel
 bumper_values = deque(maxlen=20)  # queue for calculating moving average of bumper values
-fence_values = deque(maxlen=20)  # queue for calculating moving average of fence values
 
 
 def signal_handler(signal_type, frame):
@@ -42,8 +41,6 @@ def start(parent_conn):
     ipcon.connect('localhost', 4223)
     time.sleep(1.0)
     servo = BrickServo('6JqqH8', ipcon)
-    servo.set_acceleration(2, 30000)  # cutter
-    servo.set_velocity(2, 30000)
     io16 = BrickletIO16('b7Y', ipcon)
     io16.set_port_configuration('a', 0b11111111, BrickletIO16.DIRECTION_IN, True)  # all pins input with pull-up
     io16.set_edge_count_config(0, BrickletIO16.EDGE_TYPE_BOTH, 1)  # set pin 0 for edge count
@@ -98,7 +95,7 @@ def start(parent_conn):
             volt = analog_bumper.get_voltage()
             bumper_values.append(volt)
             moving_average = sum(bumper_values) / len(bumper_values)
-            if volt > (moving_average * 1.30):
+            if volt > (moving_average * 1.50):
                 logger.warn("Bumper triggered, turn mower")
                 internal_cmd = 'stop/'
                 bumper_active = True
@@ -107,10 +104,8 @@ def start(parent_conn):
         # check fence
         if not fence_active and ((loop_counter + 2) % 4) == 0:
             volt = analog_fence.get_voltage()
-            fence_values.append(volt)
-            moving_average = sum(fence_values) / len(fence_values)
-            if volt > (moving_average * 3.0) and volt > 1.5:
-                logger.warn("Fence triggered, turn mower")
+            if volt > 1500.0:
+                logger.warn("Fence triggered, turn mower. Volt: %s", volt)
                 internal_cmd = 'stop/'
                 fence_active = True
                 parent_conn.send("fence_active:" + str(cur_speed))
@@ -166,7 +161,6 @@ def execute_command(cmd, servo):
         bumper_values.clear()
     elif cur_mode == 'reset_fence':
         fence_active = False
-        fence_values.clear()
 
 
 # execute a drive command

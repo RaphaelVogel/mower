@@ -51,7 +51,7 @@ if __name__ == "__main__":
     ipcon.connect('localhost', 4223)
     time.sleep(1.0)
     master = BrickMaster('5Wr87j', ipcon)
-    time.sleep(3)
+    time.sleep(5)
     loop_counter = 0
 
     while True:
@@ -107,7 +107,7 @@ if __name__ == "__main__":
             if split_cmd[0] == "fence_active":
                 time.sleep(0.5)
                 drive_conn.send("backward/6000")
-                time.sleep(1.5)
+                time.sleep(2.0)
                 drive_conn.send("stop/")
                 time.sleep(0.5)
                 drive_conn.send(random.choice(left_right))
