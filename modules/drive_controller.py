@@ -104,7 +104,7 @@ def start(parent_conn):
         # check fence
         if not fence_active and ((loop_counter + 2) % 4) == 0:
             volt = analog_fence.get_voltage()
-            if volt > 1500.0:
+            if volt > 1000.0:
                 logger.warn("Fence triggered, turn mower. Volt: %s", volt)
                 internal_cmd = 'stop/'
                 fence_active = True
