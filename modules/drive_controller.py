@@ -7,6 +7,7 @@ from tinkerforge.brick_servo import BrickServo
 from tinkerforge.bricklet_io16 import BrickletIO16
 from tinkerforge.bricklet_industrial_quad_relay import BrickletIndustrialQuadRelay
 from tinkerforge.bricklet_analog_in import BrickletAnalogIn
+from tinkerforge.bricklet_analog_in_v2 import BrickletAnalogInV2
 import logging
 from threading import Timer
 
@@ -49,8 +50,9 @@ def start(parent_conn):
     io16.set_edge_count_config(1, BrickletIO16.EDGE_TYPE_BOTH, 1)  # set pin 1 for edge count
     iqr = BrickletIndustrialQuadRelay('mT2', ipcon)
     iqr.set_monoflop(0b0111, 0b0111, 1500)
-    analog1 = BrickletAnalogIn('bK7', ipcon)
-    analog1.set_range(BrickletAnalogIn.RANGE_UP_TO_6V)
+    analog_bumper = BrickletAnalogIn('bK7', ipcon)
+    analog_bumper.set_range(BrickletAnalogIn.RANGE_UP_TO_6V)
+    analog_fence = BrickletAnalogInV2('vgY', ipcon)
 
     # initialize speed controller
     execute_command('stop/', servo)
@@ -93,25 +95,25 @@ def start(parent_conn):
 
         # check bumper
         if not bumper_active and ((loop_counter + 1) % 4) == 0:
-            volt = analog1.get_voltage()
+            volt = analog_bumper.get_voltage()
             bumper_values.append(volt)
             moving_average = sum(bumper_values) / len(bumper_values)
             if volt > (moving_average * 1.30):
-                logger.warn("Bumper triggered, stop mower")
+                logger.warn("Bumper triggered, turn mower")
                 internal_cmd = 'stop/'
                 bumper_active = True
                 parent_conn.send("bumper_active:" + str(cur_speed))
 
         # check fence
-#        if not fence_active and ((loop_counter + 2) % 4) == 0:
-#            volt = analog1.get_voltage()
-#            fence_values.append(volt)
-#            moving_average = sum(fence_values) / len(fence_values)
-#            if volt > (moving_average * 3.0):
-#                logger.warn("Fence triggered, stop mower")
-#                internal_cmd = 'stop/'
-#                fence_active = True
-#                parent_conn.send("fence_active:" + str(cur_speed))
+        if not fence_active and ((loop_counter + 2) % 4) == 0:
+            volt = analog_fence.get_voltage()
+            fence_values.append(volt)
+            moving_average = sum(fence_values) / len(fence_values)
+            if volt > (moving_average * 3.0) and volt > 1.5:
+                logger.warn("Fence triggered, turn mower")
+                internal_cmd = 'stop/'
+                fence_active = True
+                parent_conn.send("fence_active:" + str(cur_speed))
 
         # update drive monoflop
         if (loop_counter % 100) == 0:
