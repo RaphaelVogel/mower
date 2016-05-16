@@ -81,12 +81,12 @@ def start(parent_conn):
             rpm_values_left.append(left_rpm)
             if rpm_activated:
                 moving_average = sum(rpm_values_right) / len(rpm_values_right)
-                if moving_average > 1.0 and right_rpm < (moving_average * 0.60):
+                if moving_average > 1.0 and right_rpm < (moving_average * 0.50):
                     logger.warn("Right wheel blocked, stop mower. Moving average: %s - Left RPM: %s", moving_average, right_rpm)
                     internal_cmd = 'stop/'
 
                 moving_average = sum(rpm_values_left) / len(rpm_values_left)
-                if moving_average > 1.0 and left_rpm < (moving_average * 0.60):
+                if moving_average > 1.0 and left_rpm < (moving_average * 0.50):
                     logger.warn("Left wheel blocked, stop mower. Moving average: %s - Left RPM: %s", moving_average, left_rpm)
                     internal_cmd = 'stop/'
 
@@ -104,7 +104,7 @@ def start(parent_conn):
         # check fence
         if not fence_active and ((loop_counter + 2) % 4) == 0:
             volt = analog_fence.get_voltage()
-            if volt > 1000.0:
+            if volt > 600.0:
                 logger.warn("Fence triggered, turn mower. Volt: %s", volt)
                 internal_cmd = 'stop/'
                 fence_active = True
