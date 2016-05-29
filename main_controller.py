@@ -26,15 +26,12 @@ left_right = ['turnL/', 'turnR/']
 
 
 def signal_handler(signal_type, frame):
-    if ipcon.get_connection_state() == IPConnection.CONNECTION_STATE_CONNECTED:
-        ipcon.disconnect()
     logger.info("Terminate main_controller")
     sys.exit(0)
 
 
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, signal_handler)
-    time.sleep(1)
     # start shutdown controller
     shutdown_conn, shutdown_conn1 = mp.Pipe()
     p_shutdown = mp.Process(target=shutdown.start, args=(shutdown_conn1,), name="Shutdown Process")
@@ -47,11 +44,6 @@ if __name__ == "__main__":
     p_drive.daemon = True
     p_drive.start()
 
-    ipcon = IPConnection()
-    ipcon.connect('localhost', 4223)
-    time.sleep(1.0)
-    master = BrickMaster('5Wr87j', ipcon)
-    time.sleep(5)
     loop_counter = 0
 
     while True:
@@ -78,22 +70,22 @@ if __name__ == "__main__":
 
         # check for command from shutdown process
         if shutdown_conn.poll():
-            master.reset()
             cmd = shutdown_conn.recv()
             if cmd == "reboot":
+                drive_conn.send("reboot_driver/")
+                time.sleep(0.5)
                 subprocess.call(["sudo", "reboot"])
             elif cmd == "shutdown":
+                drive_conn.send("reboot_driver/")
+                time.sleep(0.5)
                 subprocess.call(["sudo", "shutdown", "-h", "now"])
-            elif cmd == "undervoltage":
-                drive_conn.send("stop/")
-            break
 
         # check for command from drive process
         if drive_conn.poll():
             split_cmd = drive_conn.recv().split(':')
             if split_cmd[0] == "bumper_active":
                 time.sleep(0.8)
-                drive_conn.send("backward/6000")
+                drive_conn.send("backward/" + split_cmd[1])
                 time.sleep(3.2)
                 drive_conn.send("stop/")
                 time.sleep(0.8)
@@ -103,10 +95,10 @@ if __name__ == "__main__":
                 drive_conn.send("stop/")
                 drive_conn.send("reset_bumper/")
                 time.sleep(0.8)
-                drive_conn.send("forward/9000")
+                drive_conn.send("forward/" + split_cmd[1])
             if split_cmd[0] == "fence_active":
                 time.sleep(0.8)
-                drive_conn.send("backward/6000")
+                drive_conn.send("backward/" + split_cmd[1])
                 time.sleep(3.2)
                 drive_conn.send("stop/")
                 time.sleep(0.8)
@@ -116,7 +108,7 @@ if __name__ == "__main__":
                 drive_conn.send("stop/")
                 drive_conn.send("reset_fence/")
                 time.sleep(0.8)
-                drive_conn.send("forward/9000")
+                drive_conn.send("forward/" + split_cmd[1])
 
         time.sleep(0.01)
 

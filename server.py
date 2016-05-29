@@ -50,7 +50,7 @@ if __name__ == "__main__":
     ipcon = IPConnection()
     ipcon.connect('localhost', 4223)
     time.sleep(1.0)
-    master = BrickMaster('5Wr87j', ipcon)
+    master = BrickMaster('6QHvJ1', ipcon)
 
     if len(sys.argv) > 1 and sys.argv[1] == 'devmode':
         run(server='cherrypy', host='localhost', port=8080, debug=True, reloader=True)

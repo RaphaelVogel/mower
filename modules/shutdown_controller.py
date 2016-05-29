@@ -17,8 +17,6 @@ logger = logging.getLogger("mower")
 
 def signal_handler(signal_type, frame):
     GPIO.cleanup()
-    if ipcon.get_connection_state() == IPConnection.CONNECTION_STATE_CONNECTED:
-        ipcon.disconnect()
     logger.info("Terminate shutdown_controller")
     sys.exit(0)
 
@@ -26,10 +24,6 @@ def signal_handler(signal_type, frame):
 def start(parent_conn):
     signal.signal(signal.SIGTERM, signal_handler)
     logger.info("Starting shutdown_controller")
-
-    ipcon.connect('localhost', 4223)
-    time.sleep(1.0)
-    master = BrickMaster('5Wr87j', ipcon)
     loop_counter = 0
 
     while True:
@@ -46,19 +40,12 @@ def start(parent_conn):
                 else:
                     parent_conn.send("reboot")
                     break
-                if presstime > 20:
+                if presstime > 15:
                     parent_conn.send("shutdown")
                     break
                 time.sleep(0.1)
 
             # wait so that the command really reaches main_controller
-            time.sleep(3)
+            time.sleep(1)
 
-        # Check for stack voltage
-        if (loop_counter % 100) == 0:
-            stack_voltage = master.get_stack_voltage()/1000.0
-            if stack_voltage < 20.0:
-                logger.warn("Stack Voltage below 20 V - Stop mower")
-                parent_conn.send("undervoltage")
-
-        time.sleep(0.4)
+        time.sleep(0.3)

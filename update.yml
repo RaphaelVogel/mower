@@ -14,7 +14,7 @@
     file: path=/home/pi/mower/server.py mode=0755
   - name: change filemode of main_controller.py
     file: path=/home/pi/mower/main_controller.py mode=0755
-  - name: Restart services
+  - name: Restart rpi
     sudo: yes
-    shell: systemctl restart webserver.service && systemctl restart main_controller.service
+    shell: shutdown -h now
 
