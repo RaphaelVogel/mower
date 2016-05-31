@@ -82,33 +82,22 @@ if __name__ == "__main__":
 
         # check for command from drive process
         if drive_conn.poll():
+            time.sleep(0.8)
+            drive_conn.send("backward/30000")
+            time.sleep(3.0)
+            drive_conn.send("stop/")
+            time.sleep(0.8)
+            drive_conn.send(random.choice(left_right))
+            turn_time = round(random.uniform(1.0, 2.5), 2)
+            time.sleep(turn_time)
+            drive_conn.send("stop/")
             split_cmd = drive_conn.recv().split(':')
             if split_cmd[0] == "bumper_active":
-                time.sleep(0.8)
-                drive_conn.send("backward/" + split_cmd[1])
-                time.sleep(3.2)
-                drive_conn.send("stop/")
-                time.sleep(0.8)
-                drive_conn.send(random.choice(left_right))
-                turn_time = round(random.uniform(1.0, 2.5), 2)
-                time.sleep(turn_time)
-                drive_conn.send("stop/")
                 drive_conn.send("reset_bumper/")
-                time.sleep(0.8)
-                drive_conn.send("forward/" + split_cmd[1])
-            if split_cmd[0] == "fence_active":
-                time.sleep(0.8)
-                drive_conn.send("backward/" + split_cmd[1])
-                time.sleep(3.2)
-                drive_conn.send("stop/")
-                time.sleep(0.8)
-                drive_conn.send(random.choice(left_right))
-                turn_time = round(random.uniform(1.0, 2.5), 2)
-                time.sleep(turn_time)
-                drive_conn.send("stop/")
+            elif split_cmd[0] == "fence_active":
                 drive_conn.send("reset_fence/")
-                time.sleep(0.8)
-                drive_conn.send("forward/" + split_cmd[1])
+            time.sleep(0.8)
+            drive_conn.send("forward/" + split_cmd[1])
 
         time.sleep(0.01)
 

@@ -112,11 +112,11 @@ def execute_command(cmd, right_wheel, left_wheel, cutter, master):
         right_wheel.set_velocity(-cur_speed)
         left_wheel.set_velocity(-cur_speed)
     elif cur_mode == 'turnL':
-        right_wheel.set_velocity(28000)
-        left_wheel.set_velocity(-28000)
+        right_wheel.set_velocity(30000)
+        left_wheel.set_velocity(-30000)
     elif cur_mode == 'turnR':
-        right_wheel.set_velocity(-28000)
-        left_wheel.set_velocity(28000)
+        right_wheel.set_velocity(-30000)
+        left_wheel.set_velocity(30000)
     elif cur_mode == 'cutter':
         cutter_speed = int(split_cmd[1])
         cutter.set_velocity(cutter_speed)

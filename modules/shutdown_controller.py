@@ -27,10 +27,6 @@ def start(parent_conn):
     loop_counter = 0
 
     while True:
-        loop_counter += 1
-        if loop_counter > 30000:
-            loop_counter = 0
-
         # Check GPIO
         if not GPIO.input(4):
             presstime = 0
@@ -45,7 +41,7 @@ def start(parent_conn):
                     break
                 time.sleep(0.1)
 
-            # wait so that the command really reaches main_controller
-            time.sleep(1)
+            # wait so that pressing longer does not send command twice
+            time.sleep(3)
 
         time.sleep(0.3)
