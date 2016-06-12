@@ -84,11 +84,11 @@ if __name__ == "__main__":
         if drive_conn.poll():
             time.sleep(0.8)
             drive_conn.send("backward/30000")
-            time.sleep(3.0)
+            time.sleep(2.5)
             drive_conn.send("stop/")
             time.sleep(0.8)
             drive_conn.send(random.choice(left_right))
-            turn_time = round(random.uniform(1.0, 2.5), 2)
+            turn_time = round(random.uniform(1.0, 2.2), 2)
             time.sleep(turn_time)
             drive_conn.send("stop/")
             split_cmd = drive_conn.recv().split(':')
