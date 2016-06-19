@@ -83,7 +83,7 @@ if __name__ == "__main__":
         # check for command from drive process
         if drive_conn.poll():
             split_cmd = drive_conn.recv().split(':')
-            if split_cmd[0] == "bumper_active":
+            if split_cmd[0] == "bumper_active" or split_cmd[0] == "fence_active":
                 time.sleep(0.8)
                 drive_conn.send("backward/30000")
                 time.sleep(2.5)

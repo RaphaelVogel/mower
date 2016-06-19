@@ -6,6 +6,7 @@ from tinkerforge.ip_connection import IPConnection
 from tinkerforge.brick_dc import BrickDC
 from tinkerforge.brick_master import BrickMaster
 from tinkerforge.bricklet_analog_in import BrickletAnalogIn
+from tinkerforge.bricklet_analog_in_v2 import BrickletAnalogInV2
 import logging
 
 logger = logging.getLogger("mower")
@@ -25,6 +26,7 @@ def signal_handler(signal_type, frame):
     sys.exit(0)
 
 
+# Bumper
 def bumper_triggered(voltage):
     global internal_cmd, cur_speed, g_parent_conn
     logger.warn("Bumper triggered, turn mower")
@@ -38,6 +40,14 @@ def adjust_bumper_threshold(voltage):
     analog_bumper.set_voltage_callback_threshold('>', int(voltage * 1.5), 0)
 
 
+# Fence
+def fence_activated():
+    global internal_cmd, cur_speed, g_parent_conn
+    logger.warn("Fence activated, turn mower")
+    internal_cmd = 'stop/'
+    g_parent_conn.send("fence_active:" + str(cur_speed))
+
+
 def start(parent_conn):
     global internal_cmd, g_parent_conn, analog_bumper
     g_parent_conn = parent_conn
@@ -48,6 +58,7 @@ def start(parent_conn):
     time.sleep(1.0)
     master = BrickMaster('6QHvJ1', ipcon)
     master.disable_status_led()
+    # Motor drivers
     right_wheel = BrickDC('6wUYf6', ipcon)
     right_wheel.set_drive_mode(BrickDC.DRIVE_MODE_DRIVE_COAST)
     right_wheel.set_acceleration(60000)
@@ -66,14 +77,20 @@ def start(parent_conn):
     cutter.set_velocity(0)
     cutter.disable_status_led()
     cutter.enable()
+    # Bumper
     analog_bumper = BrickletAnalogIn('bK7', ipcon)
     analog_bumper.set_range(BrickletAnalogIn.RANGE_UP_TO_6V)
     current_volt = analog_bumper.get_voltage()
     analog_bumper.register_callback(analog_bumper.CALLBACK_VOLTAGE_REACHED, bumper_triggered)
     analog_bumper.set_voltage_callback_threshold('>', int(current_volt * 1.5), 0)
-    analog_bumper.set_debounce_period(3000)
+    analog_bumper.set_debounce_period(5000)
     analog_bumper.register_callback(analog_bumper.CALLBACK_VOLTAGE, adjust_bumper_threshold)
     analog_bumper.set_voltage_callback_period(60000)
+    # Fence
+    analog_fence = BrickletAnalogInV2('vgY', ipcon)
+    analog_fence.register_callback(analog_fence.CALLBACK_VOLTAGE_REACHED, fence_activated)
+    analog_fence.set_voltage_callback_threshold("<", 600, 0)
+    analog_fence.set_debounce_period(5000)
 
     while True:
         loop_counter += 1
