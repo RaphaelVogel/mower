@@ -86,7 +86,7 @@ if __name__ == "__main__":
             if split_cmd[0] == "bumper_active" or split_cmd[0] == "fence_active":
                 time.sleep(0.8)
                 drive_conn.send("backward/30000")
-                time.sleep(2.5)
+                time.sleep(2.3)
                 drive_conn.send("stop/")
                 time.sleep(0.8)
                 drive_conn.send(random.choice(left_right))
@@ -94,6 +94,7 @@ if __name__ == "__main__":
                 time.sleep(turn_time)
                 drive_conn.send("stop/")
                 time.sleep(0.8)
+                drive_conn.send("clear_obstacle_phase/")
                 drive_conn.send("forward/" + split_cmd[1])
 
         time.sleep(0.01)

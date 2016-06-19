@@ -17,6 +17,7 @@ cur_speed = 0
 internal_cmd = None
 g_parent_conn = None
 analog_bumper = None
+obstacle_phase = False
 
 
 def signal_handler(signal_type, frame):
@@ -28,10 +29,12 @@ def signal_handler(signal_type, frame):
 
 # Bumper
 def bumper_triggered(voltage):
-    global internal_cmd, cur_speed, g_parent_conn
-    logger.warn("Bumper triggered, turn mower")
-    internal_cmd = 'stop/'
-    g_parent_conn.send("bumper_active:" + str(cur_speed))
+    global internal_cmd, cur_speed, g_parent_conn, obstacle_phase
+    if not obstacle_phase:
+        obstacle_phase = True
+        logger.warn("Bumper triggered, turn mower")
+        internal_cmd = 'stop/'
+        g_parent_conn.send("bumper_active:" + str(cur_speed))
 
 
 # pressure can change over time due to environmental changes -> threshold must be adjusted
@@ -42,10 +45,16 @@ def adjust_bumper_threshold(voltage):
 
 # Fence
 def fence_activated(voltage):
-    global internal_cmd, cur_speed, g_parent_conn
-    logger.warn("Fence activated, turn mower")
-    internal_cmd = 'stop/'
-    g_parent_conn.send("fence_active:" + str(cur_speed))
+    global internal_cmd, cur_speed, g_parent_conn, obstacle_phase
+    if not obstacle_phase:
+        obstacle_phase = True
+        logger.warn("Fence activated, turn mower")
+        internal_cmd = 'stop/'
+        g_parent_conn.send("fence_active:" + str(cur_speed))
+
+
+def undervolt_callback(voltage):
+    logger.warn("Undervoltage detected. Voltage is " + str(voltage/1000.0))
 
 
 def start(parent_conn):
@@ -58,6 +67,10 @@ def start(parent_conn):
     time.sleep(1.0)
     master = BrickMaster('6QHvJ1', ipcon)
     master.disable_status_led()
+    master.register_callback(master.CALLBACK_STACK_VOLTAGE_REACHED, undervolt_callback)
+    master.set_stack_voltage_callback_threshold('<', 22000, 0)
+    master.set_debounce_period(100000)
+
     # Motor drivers
     right_wheel = BrickDC('6wUYf6', ipcon)
     right_wheel.set_drive_mode(BrickDC.DRIVE_MODE_DRIVE_COAST)
@@ -77,6 +90,7 @@ def start(parent_conn):
     cutter.set_velocity(0)
     cutter.disable_status_led()
     cutter.enable()
+
     # Bumper
     analog_bumper = BrickletAnalogIn('bK7', ipcon)
     analog_bumper.set_range(BrickletAnalogIn.RANGE_UP_TO_6V)
@@ -86,6 +100,7 @@ def start(parent_conn):
     analog_bumper.set_debounce_period(5000)
     analog_bumper.register_callback(analog_bumper.CALLBACK_VOLTAGE, adjust_bumper_threshold)
     analog_bumper.set_voltage_callback_period(60000)
+
     # Fence
     analog_fence = BrickletAnalogInV2('vgY', ipcon)
     analog_fence.register_callback(analog_fence.CALLBACK_VOLTAGE_REACHED, fence_activated)
@@ -98,7 +113,7 @@ def start(parent_conn):
             loop_counter = 0
 
         # commands: forward/<speed>, backward/<speed>, turnL/, turnR/,
-        # cutter/<speed>, stop/, reboot_driver/
+        # cutter/<speed>, stop/, reboot_driver/, clear_obstacle_phase/
         if internal_cmd is not None:
             cmd = internal_cmd
             internal_cmd = None
@@ -113,7 +128,7 @@ def start(parent_conn):
 
 
 def execute_command(cmd, right_wheel, left_wheel, cutter, master):
-    global cur_speed
+    global cur_speed, obstacle_phase
     split_cmd = cmd.split('/')
     cur_mode = split_cmd[0]
     if cur_mode == 'forward':
@@ -138,3 +153,5 @@ def execute_command(cmd, right_wheel, left_wheel, cutter, master):
         left_wheel.set_velocity(0)
     elif cur_mode == 'reboot_driver':
         master.reset()
+    elif cur_mode == 'clear_obstacle_phase':
+        obstacle_phase = False
