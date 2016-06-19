@@ -41,7 +41,7 @@ def adjust_bumper_threshold(voltage):
 
 
 # Fence
-def fence_activated():
+def fence_activated(voltage):
     global internal_cmd, cur_speed, g_parent_conn
     logger.warn("Fence activated, turn mower")
     internal_cmd = 'stop/'
@@ -89,7 +89,7 @@ def start(parent_conn):
     # Fence
     analog_fence = BrickletAnalogInV2('vgY', ipcon)
     analog_fence.register_callback(analog_fence.CALLBACK_VOLTAGE_REACHED, fence_activated)
-    analog_fence.set_voltage_callback_threshold("<", 600, 0)
+    analog_fence.set_voltage_callback_threshold(">", 500, 0)
     analog_fence.set_debounce_period(5000)
 
     while True:
