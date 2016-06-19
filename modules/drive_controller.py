@@ -54,7 +54,9 @@ def fence_activated(voltage):
 
 
 def undervolt_callback(voltage):
-    logger.warn("Undervoltage detected. Voltage is " + str(voltage/1000.0))
+    global internal_cmd
+    logger.warn("Undervoltage detected. Voltage is " + str(voltage / 1000.0))
+    internal_cmd = 'stop/'
 
 
 def start(parent_conn):
