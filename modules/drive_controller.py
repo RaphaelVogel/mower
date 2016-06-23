@@ -88,7 +88,7 @@ def start(parent_conn):
     left_wheel.enable()
     cutter = BrickDC('6e68bZ', ipcon)
     cutter.set_drive_mode(BrickDC.DRIVE_MODE_DRIVE_COAST)
-    cutter.set_acceleration(30000)
+    cutter.set_acceleration(10000)
     cutter.set_velocity(0)
     cutter.disable_status_led()
     cutter.enable()
