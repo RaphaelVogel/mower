@@ -91,8 +91,8 @@ if __name__ == "__main__":
                 turn_time = round(random.uniform(1.0, 1.8), 2)
                 time.sleep(turn_time)
                 drive_conn.send("stop/")
-                time.sleep(0.8)
                 drive_conn.send("clear_obstacle_phase/")
+                time.sleep(0.8)
                 drive_conn.send("forward/" + split_cmd[1])
 
         time.sleep(0.01)

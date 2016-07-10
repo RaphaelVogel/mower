@@ -40,7 +40,7 @@ def bumper_triggered(voltage):
 # pressure can change over time due to environmental changes -> threshold must be adjusted
 def adjust_bumper_threshold(voltage):
     global analog_bumper
-    analog_bumper.set_voltage_callback_threshold('>', int(voltage * 1.5), 0)
+    analog_bumper.set_voltage_callback_threshold('>', int(voltage * 1.4), 0)
 
 
 # Fence
@@ -98,16 +98,16 @@ def start(parent_conn):
     analog_bumper.set_range(BrickletAnalogIn.RANGE_UP_TO_6V)
     current_volt = analog_bumper.get_voltage()
     analog_bumper.register_callback(analog_bumper.CALLBACK_VOLTAGE_REACHED, bumper_triggered)
-    analog_bumper.set_voltage_callback_threshold('>', int(current_volt * 1.5), 0)
-    analog_bumper.set_debounce_period(5000)
+    analog_bumper.set_voltage_callback_threshold('>', int(current_volt * 1.4), 0)
+    analog_bumper.set_debounce_period(4000)
     analog_bumper.register_callback(analog_bumper.CALLBACK_VOLTAGE, adjust_bumper_threshold)
-    analog_bumper.set_voltage_callback_period(60000)
+    analog_bumper.set_voltage_callback_period(30000)
 
     # Fence
     analog_fence = BrickletAnalogInV2('vgY', ipcon)
     analog_fence.register_callback(analog_fence.CALLBACK_VOLTAGE_REACHED, fence_activated)
     analog_fence.set_voltage_callback_threshold(">", 500, 0)
-    analog_fence.set_debounce_period(5000)
+    analog_fence.set_debounce_period(4000)
 
     while True:
         loop_counter += 1
