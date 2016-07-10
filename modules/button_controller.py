@@ -17,13 +17,13 @@ logger = logging.getLogger("mower")
 
 def signal_handler(signal_type, frame):
     GPIO.cleanup()
-    logger.info("Terminate shutdown_controller")
+    logger.info("Terminate button_controller")
     sys.exit(0)
 
 
 def start(parent_conn):
     signal.signal(signal.SIGTERM, signal_handler)
-    logger.info("Starting shutdown_controller")
+    logger.info("Starting button_controller")
     loop_counter = 0
 
     while True:
