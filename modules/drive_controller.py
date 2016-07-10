@@ -106,7 +106,7 @@ def start(parent_conn):
     # Fence
     analog_fence = BrickletAnalogInV2('vgY', ipcon)
     analog_fence.register_callback(analog_fence.CALLBACK_VOLTAGE_REACHED, fence_activated)
-    analog_fence.set_voltage_callback_threshold(">", 500, 0)
+    analog_fence.set_voltage_callback_threshold(">", 400, 0)
     analog_fence.set_debounce_period(4000)
 
     while True:
