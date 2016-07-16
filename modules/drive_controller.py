@@ -99,7 +99,7 @@ def start(parent_conn):
     current_volt = analog_bumper.get_voltage()
     analog_bumper.register_callback(analog_bumper.CALLBACK_VOLTAGE_REACHED, bumper_triggered)
     analog_bumper.set_voltage_callback_threshold('>', int(current_volt * 1.4), 0)
-    analog_bumper.set_debounce_period(4000)
+    analog_bumper.set_debounce_period(2000)
     analog_bumper.register_callback(analog_bumper.CALLBACK_VOLTAGE, adjust_bumper_threshold)
     analog_bumper.set_voltage_callback_period(30000)
 
@@ -107,7 +107,7 @@ def start(parent_conn):
     analog_fence = BrickletAnalogInV2('vgY', ipcon)
     analog_fence.register_callback(analog_fence.CALLBACK_VOLTAGE_REACHED, fence_activated)
     analog_fence.set_voltage_callback_threshold(">", 400, 0)
-    analog_fence.set_debounce_period(4000)
+    analog_fence.set_debounce_period(2000)
 
     while True:
         loop_counter += 1
@@ -133,7 +133,7 @@ def execute_command(cmd, right_wheel, left_wheel, cutter, master):
     global cur_speed, obstacle_phase
     split_cmd = cmd.split('/')
     cur_mode = split_cmd[0]
-    if cur_mode == 'forward':
+    if cur_mode == 'forward' and not obstacle_phase:
         cur_speed = int(split_cmd[1])
         right_wheel.set_velocity(cur_speed)
         left_wheel.set_velocity(cur_speed)
