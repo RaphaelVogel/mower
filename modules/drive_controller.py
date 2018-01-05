@@ -14,10 +14,10 @@ ipcon = IPConnection()
 
 # globals
 cur_speed = 0
-bumper_active = False
-fence_active = False
-
-bumper_values = deque(maxlen=20)  # queue for calculating moving average of bumper values
+internal_cmd = None
+g_parent_conn = None
+analog_bumper = None
+obstacle_phase = False
 
 
 def signal_handler(signal_type, frame):
@@ -27,25 +27,63 @@ def signal_handler(signal_type, frame):
     sys.exit(0)
 
 
+# Bumper
+def bumper_triggered(voltage):
+    global internal_cmd, cur_speed, g_parent_conn, obstacle_phase
+    if not obstacle_phase:
+        obstacle_phase = True
+        logger.warn("Bumper triggered, turn mower")
+        internal_cmd = 'stop/'
+        g_parent_conn.send("bumper_active:" + str(cur_speed))
+
+
+# pressure can change over time due to environmental changes -> threshold must be adjusted
+def adjust_bumper_threshold(voltage):
+    global analog_bumper, obstacle_phase
+    if not obstacle_phase:
+        analog_bumper.set_voltage_callback_threshold('>', int(voltage * 1.4), 0)
+
+
+# Fence
+def fence_activated(voltage):
+    global internal_cmd, cur_speed, g_parent_conn, obstacle_phase
+    if not obstacle_phase:
+        obstacle_phase = True
+        logger.warn("Fence activated, turn mower")
+        internal_cmd = 'stop/'
+        g_parent_conn.send("fence_active:" + str(cur_speed))
+
+
+def undervolt_callback(voltage):
+    global internal_cmd
+    logger.warn("Undervoltage detected. Voltage is " + str(voltage / 1000.0))
+    internal_cmd = 'stop/'
+
+
 def start(parent_conn):
+    global internal_cmd, g_parent_conn, analog_bumper
+    g_parent_conn = parent_conn
     loop_counter = 0
-    internal_cmd = 'stop/'  # start with 'stop/' to initialize motor driver
     signal.signal(signal.SIGTERM, signal_handler)
-    global bumper_active, fence_active
 
     ipcon.connect('localhost', 4223)
     time.sleep(1.0)
     master = BrickMaster('6QHvJ1', ipcon)
     master.disable_status_led()
+    master.register_callback(master.CALLBACK_STACK_VOLTAGE_REACHED, undervolt_callback)
+    master.set_stack_voltage_callback_threshold('<', 22000, 0)
+    master.set_debounce_period(100000)
+
+    # Motor drivers
     right_wheel = BrickDC('6wUYf6', ipcon)
     right_wheel.set_drive_mode(BrickDC.DRIVE_MODE_DRIVE_COAST)
-    right_wheel.set_acceleration(50000)
+    right_wheel.set_acceleration(60000)
     right_wheel.set_velocity(0)
     right_wheel.disable_status_led()
     right_wheel.enable()
     left_wheel = BrickDC('62gBJZ', ipcon)
     left_wheel.set_drive_mode(BrickDC.DRIVE_MODE_DRIVE_COAST)
-    left_wheel.set_acceleration(50000)
+    left_wheel.set_acceleration(60000)
     left_wheel.set_velocity(0)
     left_wheel.disable_status_led()
     left_wheel.enable()
@@ -55,9 +93,22 @@ def start(parent_conn):
     cutter.set_velocity(0)
     cutter.disable_status_led()
     cutter.enable()
+
+    # Bumper
     analog_bumper = BrickletAnalogIn('bK7', ipcon)
     analog_bumper.set_range(BrickletAnalogIn.RANGE_UP_TO_6V)
+    current_volt = analog_bumper.get_voltage()
+    analog_bumper.register_callback(analog_bumper.CALLBACK_VOLTAGE_REACHED, bumper_triggered)
+    analog_bumper.set_voltage_callback_threshold('>', int(current_volt * 1.4), 0)
+    analog_bumper.set_debounce_period(2000)
+    analog_bumper.register_callback(analog_bumper.CALLBACK_VOLTAGE, adjust_bumper_threshold)
+    analog_bumper.set_voltage_callback_period(10000)
+
+    # Fence
     analog_fence = BrickletAnalogInV2('vgY', ipcon)
+    analog_fence.register_callback(analog_fence.CALLBACK_VOLTAGE_REACHED, fence_activated)
+    analog_fence.set_voltage_callback_threshold(">", 400, 0)
+    analog_fence.set_debounce_period(2000)
 
     while True:
         loop_counter += 1
@@ -65,45 +116,25 @@ def start(parent_conn):
             loop_counter = 0
 
         # commands: forward/<speed>, backward/<speed>, turnL/, turnR/,
-        # cutter/<speed>, stop/, reset_bumper/, reset_fence/, reboot_driver/
+        # cutter/<speed>, stop/, reboot_driver/, clear_obstacle_phase/
         if internal_cmd is not None:
             cmd = internal_cmd
             internal_cmd = None
             logger.info("Execute internal command %s" % cmd)
             execute_command(cmd, right_wheel, left_wheel, cutter, master)
-        elif parent_conn.poll():
-            cmd = parent_conn.recv()
+        elif g_parent_conn.poll():
+            cmd = g_parent_conn.recv()
             logger.info("Execute external command %s" % cmd)
             execute_command(cmd, right_wheel, left_wheel, cutter, master)
-
-        # check bumper
-        if not bumper_active and (loop_counter % 4) == 0:
-            volt = analog_bumper.get_voltage()
-            bumper_values.append(volt)
-            moving_average = sum(bumper_values) / len(bumper_values)
-            if volt > (moving_average * 1.50):
-                logger.warn("Bumper triggered, turn mower")
-                internal_cmd = 'stop/'
-                bumper_active = True
-                parent_conn.send("bumper_active:" + str(cur_speed))
-
-        # check fence
-        if not fence_active and ((loop_counter + 2) % 4) == 0:
-            volt = analog_fence.get_voltage()
-            if volt > 600.0:
-                logger.warn("Fence triggered, turn mower. Volt: %s", volt)
-                internal_cmd = 'stop/'
-                fence_active = True
-                parent_conn.send("fence_active:" + str(cur_speed))
 
         time.sleep(0.01)
 
 
 def execute_command(cmd, right_wheel, left_wheel, cutter, master):
-    global cur_speed, bumper_active, bumper_values, fence_active
+    global cur_speed, obstacle_phase
     split_cmd = cmd.split('/')
     cur_mode = split_cmd[0]
-    if cur_mode == 'forward' and not bumper_active and not fence_active:
+    if cur_mode == 'forward' and not obstacle_phase:
         cur_speed = int(split_cmd[1])
         right_wheel.set_velocity(cur_speed)
         left_wheel.set_velocity(cur_speed)
@@ -123,10 +154,7 @@ def execute_command(cmd, right_wheel, left_wheel, cutter, master):
     elif cur_mode == 'stop':
         right_wheel.set_velocity(0)
         left_wheel.set_velocity(0)
-    elif cur_mode == 'reset_bumper':
-        bumper_active = False
-        bumper_values.clear()
-    elif cur_mode == 'reset_fence':
-        fence_active = False
     elif cur_mode == 'reboot_driver':
         master.reset()
+    elif cur_mode == 'clear_obstacle_phase':
+        obstacle_phase = False

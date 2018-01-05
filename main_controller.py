@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 import multiprocessing as mp
-import modules.shutdown_controller as shutdown
+import modules.button_controller as button
 import modules.drive_controller as drive
 import time
 import signal
-from tinkerforge.ip_connection import IPConnection
-from tinkerforge.brick_master import BrickMaster
 import sys
 import logging
 from logging.handlers import RotatingFileHandler
@@ -32,11 +30,11 @@ def signal_handler(signal_type, frame):
 
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, signal_handler)
-    # start shutdown controller
-    shutdown_conn, shutdown_conn1 = mp.Pipe()
-    p_shutdown = mp.Process(target=shutdown.start, args=(shutdown_conn1,), name="Shutdown Process")
-    p_shutdown.daemon = True
-    p_shutdown.start()
+    # start button controller
+    button_conn, button_conn1 = mp.Pipe()
+    p_button = mp.Process(target=button.start, args=(button_conn1,), name="Button Process")
+    p_button.daemon = True
+    p_button.start()
 
     # start drive controller
     drive_conn, drive_conn1 = mp.Pipe()
@@ -68,9 +66,9 @@ if __name__ == "__main__":
                     else:
                         logger.error("Wrong command from webserver", web_command, "does not exist")
 
-        # check for command from shutdown process
-        if shutdown_conn.poll():
-            cmd = shutdown_conn.recv()
+        # check for command from button process
+        if button_conn.poll():
+            cmd = button_conn.recv()
             if cmd == "reboot":
                 drive_conn.send("reboot_driver/")
                 time.sleep(0.5)
@@ -82,22 +80,20 @@ if __name__ == "__main__":
 
         # check for command from drive process
         if drive_conn.poll():
-            time.sleep(0.8)
-            drive_conn.send("backward/30000")
-            time.sleep(2.5)
-            drive_conn.send("stop/")
-            time.sleep(0.8)
-            drive_conn.send(random.choice(left_right))
-            turn_time = round(random.uniform(1.0, 2.2), 2)
-            time.sleep(turn_time)
-            drive_conn.send("stop/")
             split_cmd = drive_conn.recv().split(':')
-            if split_cmd[0] == "bumper_active":
-                drive_conn.send("reset_bumper/")
-            elif split_cmd[0] == "fence_active":
-                drive_conn.send("reset_fence/")
-            time.sleep(0.8)
-            drive_conn.send("forward/" + split_cmd[1])
+            if split_cmd[0] == "bumper_active" or split_cmd[0] == "fence_active":
+                time.sleep(0.8)
+                drive_conn.send("backward/30000")
+                time.sleep(2.2)
+                drive_conn.send("stop/")
+                time.sleep(0.8)
+                drive_conn.send(random.choice(left_right))
+                turn_time = round(random.uniform(1.0, 1.6), 2)
+                time.sleep(turn_time)
+                drive_conn.send("stop/")
+                drive_conn.send("clear_obstacle_phase/")
+                time.sleep(2.0)
+                drive_conn.send("forward/" + split_cmd[1])
 
         time.sleep(0.01)
 

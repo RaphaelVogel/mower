@@ -4,8 +4,8 @@
   tasks:
   - name: Copy modules folder
     copy: src=./modules/ dest=/home/pi/mower/modules/
-  - name: Copy web folder
-    copy: src=./web/ dest=/home/pi/mower/web/
+#  - name: Copy web folder
+#    copy: src=./web/ dest=/home/pi/mower/web/
   - name: Copy main_controller.py
     copy: src=./main_controller.py dest=/home/pi/mower/main_controller.py
   - name: Copy server.py
@@ -14,7 +14,5 @@
     file: path=/home/pi/mower/server.py mode=0755
   - name: change filemode of main_controller.py
     file: path=/home/pi/mower/main_controller.py mode=0755
-  - name: Shutdown rpi
-    sudo: yes
-    shell: shutdown -h now
-
+  - name: Reboot rpi
+    shell: sudo systemctl reboot
