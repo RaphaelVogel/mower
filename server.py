@@ -30,8 +30,8 @@ def drive_controller_command(state, value):
 
 
 if __name__ == "__main__":
-    with open("/home/pi/mower/command", "r+") as file:
-        mm = mmap.mmap(file.fileno(), 0)
+    with open("/home/pi/mower/command", "wb") as f:
+        mm = mmap.mmap(f.fileno(), 0)
         mm.write(pickle.dumps(None))
 
     if len(sys.argv) > 1 and sys.argv[1] == 'devmode':

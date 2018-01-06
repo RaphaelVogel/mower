@@ -9,3 +9,4 @@ web/lib/*
 modules/command.txt
 adafruit_hostapd_14128.zip
 *.pdf
+*.log
