@@ -54,14 +54,10 @@
 			sendCutterRequest('0');
 		});
 
-        $("#get_voltage").bind('touchstart mousedown',function(){
-			getVoltageRequest();
-		});
-
         $( "#slider" ).slider({
 	    	value:22000,
 	        min: 22000,
-	        max: 32000,
+	        max: 30000,
 	        step: 2000,
 	        slide: function( event, ui ) {
 	        	$( "#speed" ).html("Geschwindigkeit: " + ui.value);
@@ -75,7 +71,7 @@
 		*  -------------------------------------------------------------*/
 		function sendDriveRequest(direction, speed){
 			$.ajax({
-				  url: "/drive/"+direction+"/"+speed,
+				  url: "/drive_controller/"+direction+"/"+speed,
 				  dataType: "text",
 				  success: function(message){
 					  $("#messages").css("color", "black");
@@ -90,22 +86,7 @@
 
 		function sendCutterRequest(speed){
 			$.ajax({
-				  url: "/cutter/"+speed,
-				  dataType: "text",
-				  success: function(message){
-					  $("#messages").css("color", "black");
-					  $("#messages").val(message);
-				  },
-				  error: function(jqXHR, textStatus, errorThrown){
-					  $("#messages").css("color", "red");
-					  $("#messages").val(errorThrown + ": "+ jqXHR.responseText);
-				  }
-				});
-		}
-
-		function getVoltageRequest(){
-			$.ajax({
-				  url: "/master/getVoltage",
+				  url: "/drive_controller/cutter/"+speed,
 				  dataType: "text",
 				  success: function(message){
 					  $("#messages").css("color", "black");
@@ -132,7 +113,6 @@
         <br><br>
         <button type="button" id="cutter_on" style="font-size: 2.0em; margin:10px;">&nbsp;ON&nbsp;</button>
         <button type="button" id="cutter_off" style="font-size: 2.0em; margin:10px;">&nbsp;OFF&nbsp;</button><br><br>
-        <button type="button" id="get_voltage" style="font-size: 2.0em; margin:10px;">&nbsp;Get Voltage&nbsp;</button>
         <p style="margin:80px;">
             <div id="slider" style="font-size: 1.6em;"></div><br>
             <div id="speed" style="font-size: 1.6em;"></div>

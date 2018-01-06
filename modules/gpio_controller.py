@@ -26,15 +26,10 @@ def start(main_controller_connection):
     signal.signal(signal.SIGTERM, signal_handler)
     logger.info("Starting gpio_controller")
 
-    # initialize master connection
-    ipcon.connect('localhost', 4223)
-    time.sleep(1.0)
-    master_brick = BrickMaster('6QHvJ1', ipcon)
-
-    command = None
     while True:
         # Check GPIO
         if not GPIO.input(4):
+            command = None
             presstime = 0
             for i in range(50):
                 if not GPIO.input(4):
@@ -47,11 +42,13 @@ def start(main_controller_connection):
                     break
                 time.sleep(0.1)
 
-        master_brick.reset()
-
-        if command is State.reboot_system:
-            subprocess.call(["sudo", "reboot"])
-        elif command is State.shutdown_system:
-            subprocess.call(["sudo", "shutdown", "-h", "now"])
+            ipcon.connect('localhost', 4223)
+            time.sleep(1.0)
+            master_brick = BrickMaster('6QHvJ1', ipcon)
+            master_brick.reset()
+            if command is State.reboot_system:
+                subprocess.call(["sudo", "reboot"])
+            elif command is State.shutdown_system:
+                subprocess.call(["sudo", "shutdown", "-h", "now"])
 
         time.sleep(0.3)
