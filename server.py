@@ -31,8 +31,7 @@ def drive_controller_command(state, value):
 
 if __name__ == "__main__":
     with open("/home/pi/mower/command", "wb") as f:
-        mm = mmap.mmap(f.fileno(), 0)
-        mm.write(pickle.dumps(None))
+        f.write(pickle.dumps(None))
 
     if len(sys.argv) > 1 and sys.argv[1] == 'devmode':
         run(server='cherrypy', host='localhost', port=8080, debug=True, reloader=True)
