@@ -1,23 +1,18 @@
-import time
 import signal
 import sys
-from collections import deque
 from tinkerforge.ip_connection import IPConnection
 from tinkerforge.brick_dc import BrickDC
-from tinkerforge.brick_master import BrickMaster
-from tinkerforge.bricklet_analog_in import BrickletAnalogIn
-from tinkerforge.bricklet_analog_in_v2 import BrickletAnalogInV2
+from modules.command import State
 import logging
+import time
+
 
 logger = logging.getLogger("mower")
 ipcon = IPConnection()
 
-# globals
-cur_speed = 0
-internal_cmd = None
-g_parent_conn = None
-analog_bumper = None
-obstacle_phase = False
+g_right_wheel_speed = 0
+g_left_wheel_speed = 0
+g_cutter_speed = 0
 
 
 def signal_handler(signal_type, frame):
@@ -27,54 +22,12 @@ def signal_handler(signal_type, frame):
     sys.exit(0)
 
 
-# Bumper
-def bumper_triggered(voltage):
-    global internal_cmd, cur_speed, g_parent_conn, obstacle_phase
-    if not obstacle_phase:
-        obstacle_phase = True
-        logger.warn("Bumper triggered, turn mower")
-        internal_cmd = 'stop/'
-        g_parent_conn.send("bumper_active:" + str(cur_speed))
-
-
-# pressure can change over time due to environmental changes -> threshold must be adjusted
-def adjust_bumper_threshold(voltage):
-    global analog_bumper, obstacle_phase
-    if not obstacle_phase:
-        analog_bumper.set_voltage_callback_threshold('>', int(voltage * 1.4), 0)
-
-
-# Fence
-def fence_activated(voltage):
-    global internal_cmd, cur_speed, g_parent_conn, obstacle_phase
-    if not obstacle_phase:
-        obstacle_phase = True
-        logger.warn("Fence activated, turn mower")
-        internal_cmd = 'stop/'
-        g_parent_conn.send("fence_active:" + str(cur_speed))
-
-
-def undervolt_callback(voltage):
-    global internal_cmd
-    logger.warn("Undervoltage detected. Voltage is " + str(voltage / 1000.0))
-    internal_cmd = 'stop/'
-
-
-def start(parent_conn):
-    global internal_cmd, g_parent_conn, analog_bumper
-    g_parent_conn = parent_conn
-    loop_counter = 0
+def start(main_controller_connection):
     signal.signal(signal.SIGTERM, signal_handler)
 
+    # Motor drivers
     ipcon.connect('localhost', 4223)
     time.sleep(1.0)
-    master = BrickMaster('6QHvJ1', ipcon)
-    master.disable_status_led()
-    master.register_callback(master.CALLBACK_STACK_VOLTAGE_REACHED, undervolt_callback)
-    master.set_stack_voltage_callback_threshold('<', 22000, 0)
-    master.set_debounce_period(100000)
-
-    # Motor drivers
     right_wheel = BrickDC('6wUYf6', ipcon)
     right_wheel.set_drive_mode(BrickDC.DRIVE_MODE_DRIVE_COAST)
     right_wheel.set_acceleration(60000)
@@ -94,67 +47,55 @@ def start(parent_conn):
     cutter.disable_status_led()
     cutter.enable()
 
-    # Bumper
-    analog_bumper = BrickletAnalogIn('bK7', ipcon)
-    analog_bumper.set_range(BrickletAnalogIn.RANGE_UP_TO_6V)
-    current_volt = analog_bumper.get_voltage()
-    analog_bumper.register_callback(analog_bumper.CALLBACK_VOLTAGE_REACHED, bumper_triggered)
-    analog_bumper.set_voltage_callback_threshold('>', int(current_volt * 1.4), 0)
-    analog_bumper.set_debounce_period(2000)
-    analog_bumper.register_callback(analog_bumper.CALLBACK_VOLTAGE, adjust_bumper_threshold)
-    analog_bumper.set_voltage_callback_period(10000)
-
-    # Fence
-    analog_fence = BrickletAnalogInV2('vgY', ipcon)
-    analog_fence.register_callback(analog_fence.CALLBACK_VOLTAGE_REACHED, fence_activated)
-    analog_fence.set_voltage_callback_threshold(">", 400, 0)
-    analog_fence.set_debounce_period(2000)
-
     while True:
-        loop_counter += 1
-        if loop_counter > 30000:
-            loop_counter = 0
-
-        # commands: forward/<speed>, backward/<speed>, turnL/, turnR/,
-        # cutter/<speed>, stop/, reboot_driver/, clear_obstacle_phase/
-        if internal_cmd is not None:
-            cmd = internal_cmd
-            internal_cmd = None
-            logger.info("Execute internal command %s" % cmd)
-            execute_command(cmd, right_wheel, left_wheel, cutter, master)
-        elif g_parent_conn.poll():
-            cmd = g_parent_conn.recv()
-            logger.info("Execute external command %s" % cmd)
-            execute_command(cmd, right_wheel, left_wheel, cutter, master)
+        if main_controller_connection.poll():
+            cmd = main_controller_connection.recv()
+            logger.info("Execute external command {}".format(cmd))
+            execute_command(cmd, right_wheel, left_wheel, cutter)
 
         time.sleep(0.01)
 
 
 def execute_command(cmd, right_wheel, left_wheel, cutter, master):
-    global cur_speed, obstacle_phase
-    split_cmd = cmd.split('/')
-    cur_mode = split_cmd[0]
-    if cur_mode == 'forward' and not obstacle_phase:
-        cur_speed = int(split_cmd[1])
-        right_wheel.set_velocity(cur_speed)
-        left_wheel.set_velocity(cur_speed)
-    elif cur_mode == 'backward':
-        cur_speed = int(split_cmd[1])
-        right_wheel.set_velocity(-cur_speed)
-        left_wheel.set_velocity(-cur_speed)
-    elif cur_mode == 'turnL':
-        right_wheel.set_velocity(30000)
-        left_wheel.set_velocity(-30000)
-    elif cur_mode == 'turnR':
-        right_wheel.set_velocity(-30000)
-        left_wheel.set_velocity(30000)
-    elif cur_mode == 'cutter':
-        cutter_speed = int(split_cmd[1])
-        cutter.set_velocity(cutter_speed)
-    elif cur_mode == 'stop':
+    global g_right_wheel_speed, g_left_wheel_speed, g_cutter_speed
+
+    if cmd.state is State.forward:
+        right_wheel.set_velocity(cmd.value)
+        left_wheel.set_velocity(cmd.value)
+        g_right_wheel_speed, g_left_wheel_speed = cmd.value, cmd.value
+
+    elif cmd.state is State.stop:
         right_wheel.set_velocity(0)
         left_wheel.set_velocity(0)
-    elif cur_mode == 'reboot_driver':
-        master.reset()
-    elif cur_mode == 'clear_obstacle_phase':
-        obstacle_phase = False
+        time.sleep(0.8)  # prevent fast thrust reversal
+        g_right_wheel_speed, g_left_wheel_speed = 0, 0
+
+    elif cmd.state is State.backward:
+        right_wheel.set_velocity(-cmd.value)
+        left_wheel.set_velocity(-cmd.value)
+        g_right_wheel_speed, g_left_wheel_speed = -cmd.value, -cmd.value
+
+    elif cmd.state is State.turn_left:
+        right_wheel.set_velocity(30000)
+        left_wheel.set_velocity(-30000)
+        g_right_wheel_speed, g_left_wheel_speed = 30000, -30000
+
+    elif cmd.state is State.turn_right:
+        right_wheel.set_velocity(-30000)
+        left_wheel.set_velocity(30000)
+        g_right_wheel_speed, g_left_wheel_speed = -30000, 30000
+
+    elif cmd.state is State.deviate_left:
+        right_wheel.set_velocity(g_right_wheel_speed + 2500)
+        time.sleep(cmd.value)
+        right_wheel.set_velocity(g_right_wheel_speed)
+
+    elif cmd.state is State.deviate_right:
+        left_wheel.set_velocity(g_left_wheel_speed + 2500)
+        time.sleep(cmd.value)
+        left_wheel.set_velocity(g_left_wheel_speed)
+
+    elif cmd.state is State.cutter:
+        cutter.set_velocity(cmd.value)
+        g_cutter_speed = cmd.value
+
