@@ -20,7 +20,7 @@ def serve_static(filepath):
 # e.g. /drive_controller/forward/3000
 @route('/' + Controller.drive.value + '/<state>/<value>')
 def drive_controller_command(state, value):
-    cmd = Command(Controller.drive, State(state), value)
+    cmd = Command(Controller.drive, State(state), int(value))
     with open("/home/pi/mower/command", "wb") as f:
         f.write(pickle.dumps(cmd))
 
