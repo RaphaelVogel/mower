@@ -45,7 +45,7 @@ def bumper_triggered(voltage):
 
 # pressure can change over time due to environmental changes -> threshold must be adjusted
 def adjust_bumper_threshold(voltage):
-    analog_bumper.set_voltage_callback_threshold('>', int(voltage * 1.4), 0)
+    analog_bumper.set_voltage_callback_threshold('>', int(voltage * 1.3), 0)
 
 
 if __name__ == "__main__":
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     analog_bumper.set_range(BrickletAnalogIn.RANGE_UP_TO_6V)
     current_volt = analog_bumper.get_voltage()
     analog_bumper.register_callback(analog_bumper.CALLBACK_VOLTAGE_REACHED, bumper_triggered)
-    analog_bumper.set_voltage_callback_threshold('>', int(current_volt * 1.4), 0)
+    analog_bumper.set_voltage_callback_threshold('>', int(current_volt * 1.3), 0)
     analog_bumper.set_debounce_period(2000)
     analog_bumper.register_callback(analog_bumper.CALLBACK_VOLTAGE, adjust_bumper_threshold)
     analog_bumper.set_voltage_callback_period(10000)
