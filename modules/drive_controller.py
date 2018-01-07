@@ -51,7 +51,7 @@ def start(main_controller_connection):
     while True:
         if main_controller_connection.poll():
             cmd = main_controller_connection.recv()
-            logger.info("Execute external command {}".format(cmd))
+            logger.info("Execute external command {}".format(str(cmd)))
             execute_command(cmd, right_wheel, left_wheel, cutter)
 
         time.sleep(0.01)

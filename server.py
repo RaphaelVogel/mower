@@ -21,10 +21,10 @@ def serve_static(filepath):
 @route('/' + Controller.drive.value + '/<state>/<value>')
 def drive_controller_command(state, value):
     cmd = Command(Controller.drive, State(state), value)
-    with open("/home/pi/mower/command", "r+") as f:
+    with open("/home/pi/mower/command", "wb") as f:
         f.write(pickle.dumps(cmd))
 
-    return dict(status="Send following command: {}".format(cmd))
+    return dict(status="Send following command: {}".format(str(cmd)))
 
 
 if __name__ == "__main__":
