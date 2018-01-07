@@ -57,7 +57,7 @@ def start(main_controller_connection):
         time.sleep(0.01)
 
 
-def execute_command(cmd, right_wheel, left_wheel, cutter, master):
+def execute_command(cmd, right_wheel, left_wheel, cutter):
     global g_right_wheel_speed, g_left_wheel_speed, g_cutter_speed
 
     if cmd.state is State.forward:
