@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 import sys
 from bottle import run, route, static_file
-import mmap
 from modules.command import State
 from modules.command import Command
 from modules.command import Controller
@@ -23,8 +22,7 @@ def serve_static(filepath):
 def drive_controller_command(state, value):
     cmd = Command(Controller.drive, State(state), value)
     with open("/home/pi/mower/command", "r+") as f:
-        mm_file = mmap.mmap(f.fileno(), 0)
-        mm_file.write(pickle.dumps(cmd))
+        f.write(pickle.dumps(cmd))
 
     return dict(status="Send following command: {}".format(cmd))
 

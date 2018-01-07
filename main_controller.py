@@ -7,7 +7,6 @@ import signal
 import sys
 import logging
 from logging.handlers import RotatingFileHandler
-import mmap
 import pickle
 from modules.command import Command
 from modules.command import Controller
@@ -72,7 +71,7 @@ if __name__ == "__main__":
     analog_bumper.register_callback(analog_bumper.CALLBACK_VOLTAGE, adjust_bumper_threshold)
     analog_bumper.set_voltage_callback_period(10000)
 
-
+    mp.set_start_method('spawn')  # start fresh python interpreter
     # start gpio controller
     gpio_controller_connection, gpio_child_connection = mp.Pipe()
     gpio_process = mp.Process(target=gpio_controller.start, args=(gpio_child_connection,), name="GPIO Controller Process")
@@ -88,13 +87,10 @@ if __name__ == "__main__":
     while True:
         # check for external command e.g. from web server
         with open("/home/pi/mower/command", "r+") as file:
-            mm_file = mmap.mmap(file.fileno(), 0)
-            cmd = pickle.loads(mm_file.read())
+            cmd = pickle.loads(file.read())
             if cmd:
                 logger.info("Command from webserver {}".format(cmd))
-                mm_file.seek(0)
-                mm_file.write(pickle.dumps(None))
-                logger.info("External command received: {}".format(cmd))
+                file.write(pickle.dumps(None))
                 if cmd.controller is Controller.drive:
                     drive_controller_connection.send(cmd)
                 elif cmd.controller is Controller.gpio:
@@ -102,5 +98,5 @@ if __name__ == "__main__":
                 else:
                     logger.error("Wrong external command. Command {} does not exist".format(cmd))
 
-        time.sleep(0.5)
+        time.sleep(1.0)
 
