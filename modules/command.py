@@ -36,4 +36,4 @@ class Command:
         self.value = value if value is not None else None
 
     def __str__(self):
-        "Controller: {}, State: {}, Value: {}".format(self.controller, self.state, self.value)
+        return "Controller: {}, State: {}, Value: {}".format(self.controller, self.state, self.value)
