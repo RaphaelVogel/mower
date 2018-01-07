@@ -24,6 +24,7 @@ def signal_handler(signal_type, frame):
 
 def start(main_controller_connection):
     signal.signal(signal.SIGTERM, signal_handler)
+    logger.info("Starting main_controller")
 
     # Motor drivers
     ipcon.connect('localhost', 4223)

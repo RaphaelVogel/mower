@@ -51,6 +51,7 @@ def adjust_bumper_threshold(voltage):
 
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, signal_handler)
+    logger.info("Starting main_controller")
 
     # initialize master connection
     ipcon.connect('localhost', 4223)
@@ -90,6 +91,7 @@ if __name__ == "__main__":
             mm_file = mmap.mmap(file.fileno(), 0)
             cmd = pickle.loads(mm_file.read())
             if cmd:
+                logger.info("Command from webserver {}".format(cmd))
                 mm_file.seek(0)
                 mm_file.write(pickle.dumps(None))
                 logger.info("External command received: {}".format(cmd))
