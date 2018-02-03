@@ -1,10 +1,11 @@
-#!/usr/bin/python3
 import sys
 from bottle import run, route, static_file
 from modules.command import State
 from modules.command import Command
 from modules.command import Controller
-import pickle
+
+
+g_main_controller_connection = None
 
 
 @route('/')
@@ -21,16 +22,13 @@ def serve_static(filepath):
 @route('/' + Controller.drive.value + '/<state>/<value>')
 def drive_controller_command(state, value):
     cmd = Command(Controller.drive, State(state), int(value))
-    with open("/home/pi/mower/command", "wb") as f:
-        f.write(pickle.dumps(cmd))
-
-    return dict(status="Send following command: {}".format(str(cmd)))
+    g_main_controller_connection.send(cmd)
+    return dict(status="Send command: {}".format(str(cmd)))
 
 
-if __name__ == "__main__":
-    with open("/home/pi/mower/command", "wb") as f:
-        f.write(pickle.dumps(None))
-
+def start(main_controller_connection):
+    global g_main_controller_connection
+    g_main_controller_connection = main_controller_connection
     if len(sys.argv) > 1 and sys.argv[1] == 'devmode':
         run(server='cherrypy', host='localhost', port=8080, debug=True, reloader=True)
     else:

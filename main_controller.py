@@ -2,6 +2,7 @@
 import multiprocessing as mp
 import modules.gpio_controller as gpio_controller
 import modules.drive_controller as drive_controller
+import modules.webserver as webserver
 import time
 import signal
 import sys
@@ -83,15 +84,18 @@ if __name__ == "__main__":
     drive_process.daemon = True
     drive_process.start()
 
-    while True:
-        # check for external command e.g. from web server
-        with open("/home/pi/mower/command", "rb") as file:
-            cmd = pickle.loads(file.read())
+    # start webserver process
+    webserver_connection, webserver_child_connection = mp.Pipe()
+    webserver_process = mp.Process(target=webserver.start, args=(webserver_child_connection,), name="Webserver Process")
+    webserver_process.daemon = True
+    webserver_process.start()
+    
 
-        if cmd:
+    while True:
+        # check for commands from started processes
+        if webserver_connection.poll():
+            cmd = webserver_connection.recv()
             logger.info("Command from webserver {}".format(str(cmd)))
-            with open("/home/pi/mower/command", "wb") as file:
-                file.write(pickle.dumps(None))
             if cmd.controller is Controller.drive:
                 drive_controller_connection.send(cmd)
             elif cmd.controller is Controller.gpio:
@@ -99,5 +103,5 @@ if __name__ == "__main__":
             else:
                 logger.error("Wrong external command. Command {} does not exist".format(str(cmd)))
 
-        time.sleep(1.0)
+        time.sleep(0.05)
 
