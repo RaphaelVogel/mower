@@ -29,7 +29,4 @@ def drive_controller_command(state, value):
 def start(main_controller_connection):
     global g_main_controller_connection
     g_main_controller_connection = main_controller_connection
-    if len(sys.argv) > 1 and sys.argv[1] == 'devmode':
-        run(server='cherrypy', host='localhost', port=8080, debug=True, reloader=True)
-    else:
-        run(server='cherrypy', host='0.0.0.0', port=8080, debug=False, reloader=False)
+    run(host='0.0.0.0', port=8080, debug=False, reloader=False)
