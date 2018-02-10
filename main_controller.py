@@ -56,12 +56,16 @@ def adjust_bumper_threshold(voltage):
 
 def gps_coordinates(lat, ns, lon, ew, pdop, hdop, vdop, epe):
     # lat, lon are in DD.dddddd° format. 57123468 means 57,123468° 
+    lat = lat / 1000000.0
+    lon = lon / 1000000.0
     fix_status, _, _ = gps.get_status()
     if fix_status == BrickletGPS.FIX_NO_FIX:
         return
-    current_course, speed = gps.get_motion()
+    current_course, current_speed = gps.get_motion()
+    current_course = current_course / 100.0
+    current_speed = current_speed / 100.0
     logger.info("GPS coordinates: Latitude: {}, Longitude: {}, Position Error: {} cm, Course: {}, Speed: {}"\
-        .format(lat, lon, epe, current_course, speed))
+        .format(lat, lon, epe, current_course, current_speed))
     target_course = calculate_target_course(lat, lon)
     course_diff = abs(target_course - current_course)
     slowdown_factor_left = 1.0
