@@ -60,6 +60,7 @@ def gps_coordinates(lat, ns, lon, ew, pdop, hdop, vdop, epe):
     lon = lon / 1000000.0
     fix_status, _, _ = gps.get_status()
     if fix_status == BrickletGPS.FIX_NO_FIX:
+        logger.info("No fix available")
         return
     current_course, current_speed = gps.get_motion()
     current_course = current_course / 100.0
