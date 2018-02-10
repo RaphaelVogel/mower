@@ -55,13 +55,10 @@ def adjust_bumper_threshold(voltage):
 
 
 def gps_coordinates(lat, ns, lon, ew, pdop, hdop, vdop, epe):
+    # will only be called if fix is available
     # lat, lon are in DD.dddddd° format. 57123468 means 57,123468° 
     lat = lat / 1000000.0
     lon = lon / 1000000.0
-    fix_status, _, _ = gps.get_status()
-    if fix_status == BrickletGPS.FIX_NO_FIX:
-        logger.info("No fix available")
-        return
     current_course, current_speed = gps.get_motion()
     current_course = current_course / 100.0
     current_speed = current_speed / 100.0
