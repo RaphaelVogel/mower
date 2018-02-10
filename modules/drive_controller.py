@@ -86,15 +86,13 @@ def execute_command(cmd, right_wheel, left_wheel, cutter):
         left_wheel.set_velocity(30000)
         g_right_wheel_speed, g_left_wheel_speed = -30000, 30000
 
-    elif cmd.state is State.deviate_left:
-        right_wheel.set_velocity(g_right_wheel_speed + 2500)
-        time.sleep(cmd.value)
-        right_wheel.set_velocity(g_right_wheel_speed)
-
-    elif cmd.state is State.deviate_right:
-        left_wheel.set_velocity(g_left_wheel_speed + 2500)
-        time.sleep(cmd.value)
-        left_wheel.set_velocity(g_left_wheel_speed)
+    elif cmd.state is State.correct_heading:
+        slowdown_factor_left, slowdown_factor_right = cmd.value
+        speed_right = g_right_wheel_speed * slowdown_factor_right
+        speed_left = g_left_wheel_speed * slowdown_factor_left
+        right_wheel.set_velocity(int(speed_right))
+        left_wheel.set_velocity(int(speed_left))
+        g_right_wheel_speed, g_left_wheel_speed = int(speed_right), int(speed_left)
 
     elif cmd.state is State.cutter:
         cutter.set_velocity(cmd.value)

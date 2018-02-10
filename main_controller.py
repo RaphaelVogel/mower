@@ -6,6 +6,7 @@ import modules.webserver as webserver
 import time
 import signal
 import sys
+import math
 import logging
 from logging.handlers import RotatingFileHandler
 import pickle
@@ -15,6 +16,8 @@ from modules.command import State
 from tinkerforge.ip_connection import IPConnection
 from tinkerforge.brick_master import BrickMaster
 from tinkerforge.bricklet_analog_in import BrickletAnalogIn
+from tinkerforge.bricklet_gps import BrickletGPS
+from collections import namedtuple
 
 
 logger = logging.getLogger("mower")
@@ -25,6 +28,8 @@ filehandler.setFormatter(formatter)
 logger.addHandler(filehandler)
 
 ipcon = IPConnection()
+TargetCoord = namedtuple('TargetCoord', 'lat, lon')
+g_target = TargetCoord(lat=49.31899296, lon=8.80862925)
 
 
 def signal_handler(signal_type, frame):
@@ -40,13 +45,50 @@ def undervolt_callback(voltage):
 
 # Bumper
 def bumper_triggered(voltage):
-    logger.warning("Bumper triggered")
+    logger.info("Bumper triggered")
     drive_controller_connection.send(Command(Controller.drive, State.stop))
 
 
 # pressure can change over time due to environmental changes -> threshold must be adjusted
 def adjust_bumper_threshold(voltage):
     analog_bumper.set_voltage_callback_threshold('>', int(voltage * 1.3), 0)
+
+
+def gps_coordinates(lat, ns, lon, ew, pdop, hdop, vdop, epe):
+    # lat, lon are in DD.dddddd° format. 57123468 means 57,123468° 
+    fix_status, _, _ = gps.get_status()
+    if fix_status == BrickletGPS.FIX_NO_FIX:
+        return
+    current_course, speed = gps.get_motion()
+    logger.info("GPS coordinates: Latitude: {}, Longitude: {}, Position Error: {} cm, Course: {}, Speed: {}"\
+        .format(lat, lon, epe, current_course, speed))
+    target_course = calculate_target_course(lat, lon)
+    course_diff = abs(target_course - current_course)
+    slowdown_factor_left = 1.0
+    slowdown_factor_right = 1.0
+    if course_diff <=180.0: # right turn
+        slowdown_factor_right = 1 - (course_diff / 180)
+    else: # left turn
+        slowdown_factor_left = (course_diff - 180) / (359.99 - 180)
+
+    drive_controller_connection.send(
+        Command(Controller.drive, State.correct_heading, (slowdown_factor_left, slowdown_factor_right))
+    )
+
+
+def calculate_target_course(current_lat, current_lon):
+    lat1 = math.radians(current_lat)
+    lat2 = math.radians(g_target.lat)
+    diff_long = math.radians(g_target.lon - current_lon)
+    x = math.sin(diff_long) * math.cos(lat2)
+    y = math.cos(lat1) * math.sin(lat2) - (math.sin(lat1) * math.cos(lat2) * math.cos(diff_long))
+    initial_bearing = math.atan2(x, y)
+    # Now we have the initial bearing but math.atan2 return values
+    # from -180° to + 180° which is not what we want for a compass bearing
+    # The solution is to normalize the initial bearing as shown below
+    initial_bearing = math.degrees(initial_bearing)
+    compass_bearing = (initial_bearing + 360) % 360
+    return compass_bearing
 
 
 if __name__ == "__main__":
@@ -72,6 +114,11 @@ if __name__ == "__main__":
     analog_bumper.register_callback(analog_bumper.CALLBACK_VOLTAGE, adjust_bumper_threshold)
     analog_bumper.set_voltage_callback_period(10000)
 
+    # initialize gps
+    gps = BrickletGPS('sqe', ipcon)
+    gps.register_callback(gps.CALLBACK_COORDINATES, gps_coordinates)
+    gps.set_coordinates_callback_period(1000)
+
     # start gpio controller
     gpio_controller_connection, gpio_child_connection = mp.Pipe()
     gpio_process = mp.Process(target=gpio_controller.start, args=(gpio_child_connection,), name="GPIO Controller Process")
@@ -89,7 +136,7 @@ if __name__ == "__main__":
     webserver_process = mp.Process(target=webserver.start, args=(webserver_child_connection,), name="Webserver Process")
     webserver_process.daemon = True
     webserver_process.start()
-    
+
 
     while True:
         # check for commands from started processes
@@ -97,6 +144,7 @@ if __name__ == "__main__":
             cmd = webserver_connection.recv()
             logger.info("Command from webserver {}".format(str(cmd)))
             if cmd.controller is Controller.drive:
+
                 drive_controller_connection.send(cmd)
             elif cmd.controller is Controller.gpio:
                 gpio_controller_connection.send(cmd)

@@ -31,7 +31,7 @@ def start(main_controller_connection):
         if not GPIO.input(4):
             command = None
             presstime = 0
-            for i in range(50):
+            for _ in range(50):
                 if not GPIO.input(4):
                     presstime += 1
                 else:
