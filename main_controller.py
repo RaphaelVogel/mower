@@ -9,7 +9,6 @@ import sys
 import math
 import logging
 from logging.handlers import RotatingFileHandler
-import pickle
 from modules.command import Command
 from modules.command import Controller
 from modules.command import State
@@ -68,9 +67,9 @@ def gps_coordinates(lat, ns, lon, ew, pdop, hdop, vdop, epe):
     course_diff = abs(target_course - current_course)
     slowdown_factor_left = 1.0
     slowdown_factor_right = 1.0
-    if course_diff <=180.0: # right turn
+    if course_diff <= 180.0:  # right turn
         slowdown_factor_right = 1 - (course_diff / 180)
-    else: # left turn
+    else:  # left turn
         slowdown_factor_left = (course_diff - 180) / (359.99 - 180)
 
     drive_controller_connection.send(
