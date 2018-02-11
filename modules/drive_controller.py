@@ -2,7 +2,7 @@ import signal
 import sys
 from tinkerforge.ip_connection import IPConnection
 from tinkerforge.brick_dc import BrickDC
-from modules.command import State
+from module.command import State
 import logging
 import time
 
@@ -92,7 +92,9 @@ def execute_command(cmd, right_wheel, left_wheel, cutter):
         speed_left = g_left_wheel_speed * slowdown_factor_left
         right_wheel.set_velocity(int(speed_right))
         left_wheel.set_velocity(int(speed_left))
-        g_right_wheel_speed, g_left_wheel_speed = int(speed_right), int(speed_left)
+        time.sleep(0.5)
+        right_wheel.set_velocity(g_right_wheel_speed)
+        left_wheel.set_velocity(g_left_wheel_speed)
 
     elif cmd.state is State.cutter:
         cutter.set_velocity(cmd.value)
