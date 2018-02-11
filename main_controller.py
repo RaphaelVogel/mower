@@ -61,8 +61,8 @@ def gps_coordinates(lat, ns, lon, ew, pdop, hdop, vdop, epe):
     current_course, current_speed = gps.get_motion()
     current_course = current_course / 100.0
     current_speed = current_speed / 100.0
-    logger.info("GPS coordinates: Latitude: {}, Longitude: {}, Position Error: {} cm, Course: {}, Speed: {}"\
-        .format(lat, lon, epe, current_course, current_speed))
+    logger.info("GPS coordinates: Latitude: {}, Longitude: {}, Position Error: {} cm, Course: {}, Speed: {}"
+                .format(lat, lon, epe, current_course, current_speed))
     target_course = calculate_target_course(lat, lon)
     course_diff = abs(target_course - current_course)
     slowdown_factor_left = 1.0
@@ -72,9 +72,10 @@ def gps_coordinates(lat, ns, lon, ew, pdop, hdop, vdop, epe):
     else:  # left turn
         slowdown_factor_left = (course_diff - 180) / (359.99 - 180)
 
-    drive_controller_connection.send(
-        Command(Controller.drive, State.correct_heading, (slowdown_factor_left, slowdown_factor_right))
-    )
+    if slowdown_factor_left < 0.95 or slowdown_factor_right < 0.95:
+        drive_controller_connection.send(
+            Command(Controller.drive, State.correct_heading, (slowdown_factor_left, slowdown_factor_right))
+        )
 
 
 def calculate_target_course(current_lat, current_lon):
@@ -137,7 +138,6 @@ if __name__ == "__main__":
     webserver_process = mp.Process(target=webserver.start, args=(webserver_child_connection,), name="Webserver Process")
     webserver_process.daemon = True
     webserver_process.start()
-
 
     while True:
         # check for commands from started processes
