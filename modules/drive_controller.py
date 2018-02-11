@@ -2,7 +2,7 @@ import signal
 import sys
 from tinkerforge.ip_connection import IPConnection
 from tinkerforge.brick_dc import BrickDC
-from module.command import State
+from modules.command import State
 import logging
 import time
 
