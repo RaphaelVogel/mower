@@ -64,6 +64,7 @@ def gps_coordinates(lat, ns, lon, ew, pdop, hdop, vdop, epe):
     logger.info("GPS coordinates: Latitude: {}, Longitude: {}, Position Error: {} cm, Course: {}, Speed: {}"
                 .format(lat, lon, epe, current_course, current_speed))
     target_course = calculate_target_course(lat, lon)
+    logger.info("Target course {}".format(str(target_course)))
     course_diff = abs(target_course - current_course)
     slowdown_factor_left = 1.0
     slowdown_factor_right = 1.0
@@ -71,6 +72,8 @@ def gps_coordinates(lat, ns, lon, ew, pdop, hdop, vdop, epe):
         slowdown_factor_right = 1 - (course_diff / 180)
     else:  # left turn
         slowdown_factor_left = (course_diff - 180) / (359.99 - 180)
+
+    logger.info("Slowdown factor right {}; Slowdown factor left {}".format(str(slowdown_factor_right), str(slowdown_factor_left)))
 
     if slowdown_factor_left < 0.95 or slowdown_factor_right < 0.95:
         drive_controller_connection.send(
@@ -119,7 +122,7 @@ if __name__ == "__main__":
     # initialize gps
     gps = BrickletGPS('sqe', ipcon)
     gps.register_callback(gps.CALLBACK_COORDINATES, gps_coordinates)
-    gps.set_coordinates_callback_period(1000)
+    gps.set_coordinates_callback_period(2000)
 
     # start gpio controller
     gpio_controller_connection, gpio_child_connection = mp.Pipe()
@@ -143,14 +146,12 @@ if __name__ == "__main__":
         # check for commands from started processes
         if webserver_connection.poll():
             cmd = webserver_connection.recv()
-            logger.info("Command from webserver {}".format(str(cmd)))
             if cmd.controller is Controller.drive:
-
                 drive_controller_connection.send(cmd)
             elif cmd.controller is Controller.gpio:
                 gpio_controller_connection.send(cmd)
             else:
                 logger.error("Wrong external command. Command {} does not exist".format(str(cmd)))
 
-        time.sleep(0.05)
+        time.sleep(0.1)
 
