@@ -21,7 +21,7 @@ from collections import namedtuple
 
 logger = logging.getLogger("mower")
 logger.setLevel(logging.WARN)
-filehandler = RotatingFileHandler('/home/pi/mower/main_controller.log', maxBytes=100000, backupCount=2)
+filehandler = RotatingFileHandler('/home/pi/mower/main_controller.log', maxBytes=1000000, backupCount=2)
 formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(filename)s:%(lineno)s  --  %(message)s', datefmt='%d-%m-%Y %H:%M:%S')
 filehandler.setFormatter(formatter)
 logger.addHandler(filehandler)
@@ -73,9 +73,7 @@ def gps_coordinates(lat, ns, lon, ew, pdop, hdop, vdop, epe):
     else:  # left turn
         slowdown_factor_left = (course_diff - 180) / (359.99 - 180)
 
-    logger.info("Slowdown factor right {}; Slowdown factor left {}".format(str(slowdown_factor_right), str(slowdown_factor_left)))
-
-    if slowdown_factor_left < 0.95 or slowdown_factor_right < 0.95:
+    if slowdown_factor_left < 0.90 or slowdown_factor_right < 0.90:
         drive_controller_connection.send(
             Command(Controller.drive, State.correct_heading, (slowdown_factor_left, slowdown_factor_right))
         )
